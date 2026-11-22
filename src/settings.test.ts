@@ -5,6 +5,7 @@ import {
 	DEFAULT_SETTINGS,
 	describeFolder,
 	normalizeFolder,
+	normalizeTemplate,
 	resolveConfig,
 } from './settings/types';
 
@@ -35,6 +36,8 @@ describe('resolveConfig', () => {
 		expect(config.goalFolder).toBe('goals');
 		expect(config.projectFolder).toBe('projects');
 		expect(config.templateFolder).toBe('templates');
+		expect(config.goalTemplate).toBe('');
+		expect(config.projectTemplate).toBe('');
 		expect(config.goalTag).toBe('goal');
 		expect(config.projectTag).toBe('project');
 		expect(config.goalCategories).toEqual(DEFAULT_GOAL_CATEGORIES);
@@ -135,6 +138,35 @@ describe('resolveConfig', () => {
 
 		expect(config.useTimekeep).toBe(false);
 		expect(config.openAfterCreate).toBe(true);
+	});
+
+	it('normalizes template note paths', () => {
+		const config = resolveConfig({
+			goalTemplate: ' templates\\Goal template.md ',
+			projectTemplate: '../outside.md',
+		});
+
+		expect(config.goalTemplate).toBe('templates/Goal template');
+		expect(config.projectTemplate).toBe('');
+	});
+});
+
+describe('normalizeTemplate', () => {
+	it('strips the extension and normalizes separators', () => {
+		expect(normalizeTemplate('templates/Goal Template.md')).toBe(
+			'templates/Goal Template',
+		);
+		expect(normalizeTemplate('/templates//Goal.md/')).toBe('templates/Goal');
+	});
+
+	it('treats blank input as no template', () => {
+		expect(normalizeTemplate('')).toBe('');
+		expect(normalizeTemplate(42)).toBe('');
+	});
+
+	it('rejects a path that leaves the vault', () => {
+		expect(normalizeTemplate('../outside.md')).toBe('');
+		expect(normalizeTemplate('C:\\Vault\\Goal.md')).toBe('');
 	});
 });
 

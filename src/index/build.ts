@@ -1,3 +1,4 @@
+import { TEMPLATE_TYPE } from '../constants';
 import type { ResolvedFields } from '../fields/resolve';
 import type {
 	GoalNode,
@@ -5,8 +6,6 @@ import type {
 	ProjectNode,
 	QuestlineIndex,
 } from './types';
-
-export const TEMPLATE_TYPE = 'questline-template';
 
 /** File name without its folder, `.md` extension, or leading `; `. */
 export function noteName(path: string): string {

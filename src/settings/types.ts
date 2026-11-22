@@ -12,6 +12,10 @@ export interface QuestlineSettings {
 	goalFolder: string;
 	projectFolder: string;
 	templateFolder: string;
+	/** Vault path of the global goal template, or blank for the built-in one. */
+	goalTemplate: string;
+	/** Vault path of the global project template, or blank for the built-in one. */
+	projectTemplate: string;
 	goalTag: string;
 	projectTag: string;
 	goalCategories: string[];
@@ -52,6 +56,8 @@ export const DEFAULT_SETTINGS: QuestlineSettings = {
 	goalFolder: DEFAULT_GOAL_FOLDER,
 	projectFolder: DEFAULT_PROJECT_FOLDER,
 	templateFolder: DEFAULT_TEMPLATE_FOLDER,
+	goalTemplate: '',
+	projectTemplate: '',
 	goalTag: 'goal',
 	projectTag: 'project',
 	goalCategories: [...DEFAULT_GOAL_CATEGORIES],
@@ -74,6 +80,8 @@ export interface QuestlineConfig {
 	goalFolder: string;
 	projectFolder: string;
 	templateFolder: string;
+	goalTemplate: string;
+	projectTemplate: string;
 	goalTag: string;
 	projectTag: string;
 	goalCategories: readonly string[];
@@ -109,6 +117,17 @@ export function normalizeFolder(value: unknown): string {
 	}
 
 	return segments.join('/');
+}
+
+/**
+ * A template setting points at one note. Blank means the built-in template.
+ * A path that cannot be inside the vault falls back to blank, and the `.md`
+ * suffix is dropped so the same note always stores the same way.
+ */
+export function normalizeTemplate(value: unknown): string {
+	if (typeof value !== 'string') return '';
+
+	return normalizeFolder(value).replace(/\.md$/i, '');
 }
 
 /** Tags are stored without a hash and compared case-insensitively. */
@@ -203,6 +222,8 @@ export function resolveConfig(
 			DEFAULT_TEMPLATE_FOLDER,
 			checkFolder,
 		),
+		goalTemplate: normalizeTemplate(stored.goalTemplate),
+		projectTemplate: normalizeTemplate(stored.projectTemplate),
 		goalTag: normalizeTagSetting(stored.goalTag, DEFAULT_SETTINGS.goalTag),
 		projectTag: normalizeTagSetting(
 			stored.projectTag,

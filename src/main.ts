@@ -10,6 +10,11 @@ import {
 	type QuestlineConfig,
 	type QuestlineSettings,
 } from './settings';
+import { registerTemplateCommands } from './templates/commands';
+import {
+	createStarterTemplates as writeStarterTemplates,
+} from './templates/notes';
+import type { StarterResult } from './templates/starter';
 
 export default class QuestlinePlugin extends Plugin {
 	settings!: QuestlineSettings;
@@ -28,6 +33,7 @@ export default class QuestlinePlugin extends Plugin {
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new QuestlineSettingTab(this.app, this));
 
+		registerTemplateCommands(this);
 		this.registerIndexEvents();
 		this.app.workspace.onLayoutReady(() => {
 			void this.questline.refresh();
@@ -51,9 +57,11 @@ export default class QuestlinePlugin extends Plugin {
 	/** Persist a settings change and rebuild the index if it depends on it. */
 	async updateSettings(patch: Partial<QuestlineSettings>): Promise<void> {
 		this.settings = { ...this.settings, ...patch };
+		// Rebuild before saving, so a button clicked right after leaving an
+		// input already reads the value that was just typed.
+		this.config = this.buildConfig();
 		await this.saveSettings();
 
-		this.config = this.buildConfig();
 		if (await this.questline.setConfig(this.config)) {
 			this.questline.scheduleRefresh();
 		}
@@ -62,6 +70,11 @@ export default class QuestlinePlugin extends Plugin {
 	/** Subscribe to index rebuilds. Returns an unsubscribe function. */
 	onIndexRefresh(listener: (index: QuestlineIndex) => void): () => void {
 		return this.questline.onRefresh(listener);
+	}
+
+	/** Write the editable starter templates, or report the ones already there. */
+	async createStarterTemplates(): Promise<StarterResult> {
+		return writeStarterTemplates(this.app, this.config);
 	}
 
 	private buildConfig(): QuestlineConfig {

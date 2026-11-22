@@ -1,8 +1,12 @@
 import { Setting, TFolder, type SettingDefinitionGroup } from 'obsidian';
 import type QuestlinePlugin from '../main';
-import { folderSetting } from './folderPicker';
+import {
+	announceStarterError,
+	announceStarterResult,
+} from '../templates/notes';
+import { folderSetting, noteSetting } from './folderPicker';
 import { renderListEditor } from './listEditor';
-import { normalizeFolder } from './types';
+import { normalizeFolder, normalizeTemplate } from './types';
 import {
 	group,
 	noteParagraph,
@@ -27,7 +31,7 @@ function folderNormalizer(
 	};
 }
 
-/** Landing group: where notes live, and the two field sub-pages. */
+/** Landing group: where notes live, the template files, and the two field sub-pages. */
 export function notesGroup(host: SettingsHost): SettingDefinitionGroup {
 	return {
 		type: 'group',
@@ -41,6 +45,12 @@ export function notesGroup(host: SettingsHost): SettingDefinitionGroup {
 			),
 			pageDefinition(
 				host,
+				'Templates',
+				'Global goal and project templates, and the starter templates.',
+				renderTemplatesPage,
+			),
+			pageDefinition(
+				host,
 				'Tags and lists',
 				'Goal and project tags, plus the category and status choices.',
 				renderFieldsPage,
@@ -49,7 +59,7 @@ export function notesGroup(host: SettingsHost): SettingDefinitionGroup {
 	};
 }
 
-/** Folders sub-page: the three creation destinations and template storage. */
+/** Folders sub-page: where new goals and projects are created. */
 function renderFoldersPage(
 	host: SettingsHost,
 	containerEl: HTMLElement,
@@ -85,17 +95,86 @@ function renderFoldersPage(
 		normalize,
 		commit: (path) => plugin.updateSettings({ projectFolder: path }),
 	});
+}
 
-	const template = new Setting(card)
+/**
+ * Templates sub-page: the two global template notes, then the folder the
+ * starter files are written to and the button that writes them. A path that
+ * points at a folder cannot be a template, so it clears instead.
+ */
+function renderTemplatesPage(
+	host: SettingsHost,
+	containerEl: HTMLElement,
+): void {
+	const { plugin } = host;
+	const { settings } = plugin;
+	const card = group(containerEl, 'Global templates');
+	const normalize = (raw: string): string => {
+		const path = normalizeTemplate(raw);
+		if (!path) return '';
+
+		return plugin.app.vault.getAbstractFileByPath(path) instanceof TFolder
+			? ''
+			: path;
+	};
+
+	noteParagraph(
+		card,
+		'Creation uses the goal\'s own project template first, then the global template here, then the built-in body. Leave a template blank to use the built-in one.',
+	);
+
+	const goal = new Setting(card)
+		.setName('Goal template')
+		.setDesc('Copied into new goals.');
+	noteSetting(goal, {
+		app: plugin.app,
+		value: settings.goalTemplate,
+		placeholder: 'Built-in goal template',
+		normalize,
+		commit: (path) => plugin.updateSettings({ goalTemplate: path }),
+	});
+
+	const project = new Setting(card)
+		.setName('Project template')
+		.setDesc('Used when a goal has no project template of its own.');
+	noteSetting(project, {
+		app: plugin.app,
+		value: settings.projectTemplate,
+		placeholder: 'Built-in project template',
+		normalize,
+		commit: (path) => plugin.updateSettings({ projectTemplate: path }),
+	});
+
+	const starter = group(containerEl, 'Starter templates');
+	noteParagraph(
+		starter,
+		'Pick where the starter templates are written, then create them. Existing files are left alone.',
+	);
+
+	const folder = new Setting(starter)
 		.setName('Template folder')
 		.setDesc('Where starter and per-goal project templates are stored.');
-	folderSetting(template, {
+	folderSetting(folder, {
 		app: plugin.app,
 		value: settings.templateFolder,
 		placeholder: 'templates',
-		normalize,
+		normalize: folderNormalizer(plugin),
 		commit: (path) => plugin.updateSettings({ templateFolder: path }),
 	});
+
+	const create = new Setting(starter)
+		.setName('Create starter templates')
+		.setDesc(
+			'Write an editable goal template and project template into the folder above.',
+		);
+	create.addButton((button) =>
+		button.setButtonText('Create').onClick(() => {
+			void plugin
+				.createStarterTemplates()
+				.then(announceStarterResult)
+				.catch(announceStarterError);
+		}),
+	);
 }
 
 /** Tags and lists sub-page: the two tags plus the picker vocabularies. */
