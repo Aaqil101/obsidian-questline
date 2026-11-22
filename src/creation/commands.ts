@@ -3,7 +3,7 @@ import { Notice } from 'obsidian';
 import type QuestlinePlugin from '../main';
 import { readTemplate } from '../templates/notes';
 import { GoalModal } from './goalModal';
-import { openCreatedNote, vaultPathExists, writeCreation } from './notes';
+import { openNote, vaultPathExists, writeCreation } from './notes';
 import {
 	planGoal,
 	planProject,
@@ -11,6 +11,7 @@ import {
 	type ProjectDraft,
 } from './plan';
 import { ProjectModal } from './projectModal';
+import { registerGoalTemplateCommands } from './templateManager';
 import {
 	announceMissingTemplate,
 	readChosenProjectTemplate,
@@ -27,6 +28,7 @@ export function registerCreationCommands(plugin: QuestlinePlugin): void {
 		name: 'New project',
 		callback: () => openProjectModal(plugin),
 	});
+	registerGoalTemplateCommands(plugin);
 }
 
 function openGoalModal(plugin: QuestlinePlugin): void {
@@ -76,7 +78,7 @@ async function createGoal(
 		const file = await writeCreation(app, plan);
 		new Notice(`Created the goal ${file.basename}.`);
 
-		if (config.openAfterCreate) await openCreatedNote(app, file);
+		if (config.openAfterCreate) await openNote(app, file);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		new Notice(`Questline could not create the goal: ${message}`);
@@ -113,7 +115,7 @@ async function createProject(
 		const file = await writeCreation(app, plan);
 		new Notice(`Created the project ${file.basename}.`);
 
-		if (config.openAfterCreate) await openCreatedNote(app, file);
+		if (config.openAfterCreate) await openNote(app, file);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		new Notice(`Questline could not create the project: ${message}`);

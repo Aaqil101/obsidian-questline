@@ -74,7 +74,7 @@ export async function writeCreation(
 	}
 }
 
-/** Open a freshly created note in its own tab. */
-export async function openCreatedNote(app: App, file: TFile): Promise<void> {
+/** Open a note in its own tab. */
+export async function openNote(app: App, file: TFile): Promise<void> {
 	await app.workspace.getLeaf('tab').openFile(file);
 }
