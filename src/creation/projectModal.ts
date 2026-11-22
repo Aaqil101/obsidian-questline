@@ -91,19 +91,23 @@ export class ProjectModal extends Modal {
 		const inputs: ProjectInputs = {};
 		let selectedGoal: GoalNode | null = null;
 		let status = this.config.projectStatuses[0] ?? 'Todo';
-		let templateTouched = false;
+		let templateDefault = defaultProjectTemplatePath(
+			this.app,
+			this.config,
+			null,
+		);
 		let goalButton: ButtonComponent | null = null;
 
 		const updateTemplateDefault = (): void => {
-			if (templateTouched) return;
+			const current = inputs.template?.getValue() ?? '';
+			if (current !== templateDefault) return;
 
-			inputs.template?.setValue(
-				defaultProjectTemplatePath(
-					this.app,
-					this.config,
-					selectedGoal?.fields.projectTemplate ?? null,
-				),
+			templateDefault = defaultProjectTemplatePath(
+				this.app,
+				this.config,
+				selectedGoal?.fields.projectTemplate ?? null,
 			);
+			inputs.template?.setValue(templateDefault);
 		};
 
 		const pickGoal = (): void => {
@@ -168,14 +172,7 @@ export class ProjectModal extends Modal {
 			.addText((text) => {
 				inputs.template = text;
 				text.setPlaceholder('Built-in project template');
-				text.setValue(
-					defaultProjectTemplatePath(this.app, this.config, null),
-				);
-				const touched = (): void => {
-					templateTouched = true;
-				};
-				text.inputEl.addEventListener('input', touched);
-				text.inputEl.addEventListener('change', touched);
+				text.setValue(templateDefault);
 				attachNoteSuggest(this.app, text.inputEl);
 			});
 
