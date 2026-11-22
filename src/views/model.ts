@@ -25,7 +25,7 @@ export interface GoalProgressView {
 	counts: TaskProgress;
 	projectCount: number;
 	due: DueInfo | null;
-	/** True when the goal has neither tasks nor linked projects. */
+	/** True when nothing counts toward progress and no project is linked. */
 	empty: boolean;
 }
 

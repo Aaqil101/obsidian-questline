@@ -16,7 +16,7 @@ import {
 const NOT_A_GOAL =
 	'This note is not a goal. Add the goal tag to show progress.';
 const NO_GOAL_DATA =
-	'No tasks or projects yet. Add tasks to this goal or link a project.';
+	'No progress yet. Add tasks, link a project, or set manual progress.';
 const NO_GOAL_PROJECTS =
 	'No projects yet. Create a project linked to this goal.';
 const NOT_A_PROJECT =
