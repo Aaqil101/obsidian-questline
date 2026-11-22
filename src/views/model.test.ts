@@ -180,6 +180,50 @@ describe('goalProgressView', () => {
 		expect(view.projectCount).toBe(0);
 		expect(view.empty).toBe(true);
 	});
+
+	it('ignores manual fields in tasks mode', () => {
+		const node = goal('goals/Learn.md', {
+			tags: ['goal'],
+			progress: 5,
+			target: 10,
+		});
+		const view = goalProgressView(
+			indexOf([node], [], [snapshot('goals/Learn.md', [task(0, 'x')])]),
+			node,
+			{ ...DEFAULT_CONFIG, progressMode: 'tasks' },
+			NOW,
+		);
+
+		expect(view.counts).toEqual({ completed: 1, total: 1, percent: 100 });
+	});
+
+	it('uses only manual fields in manual mode', () => {
+		const node = goal('goals/Learn.md', { tags: ['goal'] });
+		const withoutManual = goalProgressView(
+			indexOf([node], [], [snapshot('goals/Learn.md', [task(0, 'x')])]),
+			node,
+			{ ...DEFAULT_CONFIG, progressMode: 'manual' },
+			NOW,
+		);
+		expect(withoutManual.counts).toEqual({
+			completed: 0,
+			total: 0,
+			percent: 0,
+		});
+
+		const withManual = goal('goals/Learn.md', {
+			tags: ['goal'],
+			progress: 2,
+			target: 4,
+		});
+		const view = goalProgressView(
+			indexOf([withManual], [], [snapshot('goals/Learn.md')]),
+			withManual,
+			{ ...DEFAULT_CONFIG, progressMode: 'manual' },
+			NOW,
+		);
+		expect(view.counts).toEqual({ completed: 2, total: 4, percent: 50 });
+	});
 });
 
 describe('goalDueInfo', () => {

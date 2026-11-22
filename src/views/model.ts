@@ -100,7 +100,8 @@ function taskSource(
 
 /**
  * Goal progress: the goal's own tasks plus the tasks of every linked
- * project, or the goal's manual progress fields when they are present.
+ * project, or the goal's manual progress fields when the progress mode asks
+ * for them and both fields are present.
  */
 export function goalProgressView(
 	index: QuestlineIndex,
@@ -120,18 +121,24 @@ export function goalProgressView(
 		if (project && source) projects.push({ path: project.path, ...source });
 	}
 
-	const counts = computeGoalProgress(
-		{
-			tasks: taskSource(index, goal.path),
-			manual: {
-				progress: goal.fields.progress,
-				target: goal.fields.target,
-				start: goal.fields.start,
-			},
-			projects,
-		},
-		config.taskScope,
-	);
+	const manual = {
+		progress: goal.fields.progress,
+		target: goal.fields.target,
+		start: goal.fields.start,
+	};
+	const hasManual =
+		typeof manual.progress === 'number' && typeof manual.target === 'number';
+	const counts =
+		config.progressMode === 'manual' && !hasManual
+			? { completed: 0, total: 0, percent: 0 }
+			: computeGoalProgress(
+					{
+						tasks: taskSource(index, goal.path),
+						manual: config.progressMode === 'tasks' ? null : manual,
+						projects,
+					},
+					config.taskScope,
+				);
 
 	return {
 		name: goal.name,
