@@ -9,7 +9,8 @@
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"lint": "eslint .",
-		"test": "vitest run"
+		"test": "vitest run",
+		"verify:vault": "vitest run src/verify"
 	},
 	"keywords": [],
 	"license": "GPL-3.0-or-later",
@@ -24,6 +25,7 @@
 		"obsidian": "latest",
 		"typescript": "^5.8.3",
 		"typescript-eslint": "^8.59.1",
-		"vitest": "^3.2.7"
+		"vitest": "^3.2.7",
+		"yaml": "^2.9.1"
 	}
 }

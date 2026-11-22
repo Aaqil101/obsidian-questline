@@ -38,6 +38,19 @@ export default defineConfig(
 		},
 	},
 	{
+		files: ['src/verify/**/*.ts'],
+		languageOptions: {
+			globals: {
+				...globals.node,
+			},
+		},
+		rules: {
+			// The verification harness reads a vault from disk in Node; it is
+			// never loaded by the plugin.
+			'obsidianmd/no-nodejs-modules': 'off',
+		},
+	},
+	{
 		files: ['**/*.test.ts'],
 		rules: {
 			// Tests run in Node only, never inside Obsidian or on mobile.
