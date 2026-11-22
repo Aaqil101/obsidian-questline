@@ -5,12 +5,21 @@
  */
 import { MarkdownRenderChild } from 'obsidian';
 import type QuestlinePlugin from '../main';
-import { describeDue, goalProgressView } from './model';
+import {
+	describeDue,
+	formatHours,
+	goalProgressView,
+	projectProgressView,
+} from './model';
 
 const NOT_A_GOAL =
 	'This note is not a goal. Add the goal tag to show progress.';
 const NO_GOAL_DATA =
 	'No tasks or projects yet. Add tasks to this goal or link a project.';
+const NOT_A_PROJECT =
+	'This note is not a project. Add the project tag and a status to show progress.';
+const NO_PROJECT_TASKS =
+	'No tasks yet. Add a task to start tracking progress.';
 
 abstract class QuestlineBlock extends MarkdownRenderChild {
 	private unsubscribe: (() => void) | null = null;
@@ -34,6 +43,15 @@ abstract class QuestlineBlock extends MarkdownRenderChild {
 	}
 
 	protected abstract paintBlock(containerEl: HTMLElement): void;
+
+	protected openPath(path: string, event: MouseEvent): void {
+		event.preventDefault();
+		void this.plugin.app.workspace.openLinkText(
+			path,
+			this.sourcePath,
+			false,
+		);
+	}
 
 	private paint(): void {
 		this.containerEl.empty();
@@ -64,10 +82,33 @@ function renderProgressRow(
 	row.createSpan({ cls: 'questline-percent', text: `${percent}%` });
 }
 
-function renderStats(containerEl: HTMLElement, stats: readonly string[]): void {
+type Stat = string | { text: string; path: string };
+
+function renderStats(
+	containerEl: HTMLElement,
+	stats: readonly Stat[],
+	open?: (path: string, event: MouseEvent) => void,
+): void {
 	const row = containerEl.createDiv({ cls: 'questline-stats' });
 
-	for (const stat of stats) row.createSpan({ cls: 'questline-stat', text: stat });
+	for (const stat of stats) {
+		if (typeof stat === 'string') {
+			row.createSpan({ cls: 'questline-stat', text: stat });
+			continue;
+		}
+
+		const span = row.createSpan({ cls: 'questline-stat' });
+		const link = span.createEl('a', {
+			cls: 'internal-link',
+			text: stat.text,
+		});
+		link.setAttr('href', stat.path);
+		if (open) {
+			link.addEventListener('click', (event) => {
+				open(stat.path, event);
+			});
+		}
+	}
 }
 
 function renderEmpty(containerEl: HTMLElement, text: string): void {
@@ -115,11 +156,67 @@ class GoalProgressBlock extends QuestlineBlock {
 	}
 }
 
+class ProjectProgressBlock extends QuestlineBlock {
+	protected paintBlock(containerEl: HTMLElement): void {
+		const index = this.plugin.getIndex();
+		const project = index.projectByPath.get(this.sourcePath);
+
+		if (!project) {
+			renderEmpty(containerEl, NOT_A_PROJECT);
+
+			return;
+		}
+
+		const view = projectProgressView(
+			index,
+			project,
+			this.plugin.getConfig(),
+			new Date(),
+		);
+
+		if (view.empty) {
+			renderEmpty(containerEl, NO_PROJECT_TASKS);
+		} else {
+			renderProgressRow(
+				containerEl,
+				view.counts.percent,
+				`Project progress: ${view.name}`,
+			);
+		}
+
+		const stats: Stat[] = [];
+		if (!view.empty) {
+			stats.push(
+				`${view.counts.completed} / ${view.counts.total} tasks`,
+			);
+		}
+		stats.push(`Status: ${view.status ?? 'No status'}`);
+		stats.push(
+			view.goal
+				? { text: `Goal: ${view.goal.name}`, path: view.goal.path }
+				: 'No goal',
+		);
+		if (view.workHours !== null) {
+			stats.push(`${formatHours(view.workHours)} tracked`);
+		}
+
+		renderStats(containerEl, stats, (path, event) => {
+			this.openPath(path, event);
+		});
+	}
+}
+
 export function registerProgressBlocks(plugin: QuestlinePlugin): void {
 	plugin.registerMarkdownCodeBlockProcessor(
 		'goal-progress',
 		(_source, el, ctx) => {
 			ctx.addChild(new GoalProgressBlock(el, plugin, ctx.sourcePath));
+		},
+	);
+	plugin.registerMarkdownCodeBlockProcessor(
+		'project-progress',
+		(_source, el, ctx) => {
+			ctx.addChild(new ProjectProgressBlock(el, plugin, ctx.sourcePath));
 		},
 	);
 }

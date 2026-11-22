@@ -2,10 +2,11 @@
  * View models for the progress blocks. They are built from the cached index
  * only, so rendering never reads the vault or rescans notes.
  */
-import type { GoalNode, QuestlineIndex } from '../index/types';
-import { computeGoalProgress } from '../progress/progress';
+import type { GoalNode, ProjectNode, QuestlineIndex } from '../index/types';
+import { computeGoalProgress, computeProjectProgress } from '../progress/progress';
 import type { TaskProgress, TaskSource } from '../progress/tasks';
 import type { QuestlineConfig } from '../settings/types';
+import { sumWorkHours } from '../timekeep/timekeep';
 import { parseTimespan } from '../time/timespan';
 
 export interface DueInfo {
@@ -25,6 +26,22 @@ export interface GoalProgressView {
 	projectCount: number;
 	due: DueInfo | null;
 	/** True when the goal has neither tasks nor linked projects. */
+	empty: boolean;
+}
+
+export interface ProjectGoalLink {
+	path: string;
+	name: string;
+}
+
+export interface ProjectProgressView {
+	name: string;
+	counts: TaskProgress;
+	status: string | null;
+	goal: ProjectGoalLink | null;
+	/** Tracked hours, or null when Timekeep totals are turned off. */
+	workHours: number | null;
+	/** True when the project has no tasks to measure. */
 	empty: boolean;
 }
 
@@ -115,5 +132,45 @@ export function goalProgressView(
 		projectCount: projects.length,
 		due: goalDueInfo(goal.fields.timespan, goal.fields.created, now),
 		empty: counts.total === 0 && projects.length === 0,
+	};
+}
+
+/** Tracked hours rounded for display, without trailing zeros. */
+export function formatHours(hours: number): string {
+	return `${Math.round(hours * 100) / 100} h`;
+}
+
+/**
+ * Project progress from the project's tasks, its status, its resolved goal,
+ * and its Timekeep blocks. A standalone project simply has no goal link.
+ */
+export function projectProgressView(
+	index: QuestlineIndex,
+	project: ProjectNode,
+	config: QuestlineConfig,
+	now: Date,
+): ProjectProgressView {
+	const note = index.notes.get(project.path);
+	const counts = note
+		? computeProjectProgress(
+				{ tasks: note.tasks, headings: note.headings },
+				config.taskScope,
+			)
+		: { completed: 0, total: 0, percent: 0 };
+
+	const goal = project.goalPath
+		? index.goalByPath.get(project.goalPath)
+		: undefined;
+
+	return {
+		name: project.name,
+		counts,
+		status: project.fields.status,
+		goal: goal ? { path: goal.path, name: goal.name } : null,
+		workHours:
+			config.useTimekeep && note
+				? sumWorkHours(note.body, { now }).hours
+				: null,
+		empty: counts.total === 0,
 	};
 }

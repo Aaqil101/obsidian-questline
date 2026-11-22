@@ -8,22 +8,39 @@ import type {
 	TaskItem,
 } from '../index/types';
 import { DEFAULT_CONFIG } from '../settings/types';
-import { describeDue, goalDueInfo, goalProgressView } from './model';
+import {
+	describeDue,
+	formatHours,
+	goalDueInfo,
+	goalProgressView,
+	projectProgressView,
+} from './model';
 
 const NOW = new Date(2026, 0, 1);
+
+const TIMEKEEP = [
+	'```timekeep',
+	'{"entries":[{"startTime":"2026-01-01T09:00:00Z",' +
+		'"endTime":"2026-01-01T11:00:00Z"}]}',
+	'```',
+].join('\n');
 
 function task(line: number, status: string, parent = -1): TaskItem {
 	return { line, parent, status };
 }
 
-function snapshot(path: string, tasks: TaskItem[] = []): NoteSnapshot {
+function snapshot(
+	path: string,
+	tasks: TaskItem[] = [],
+	body = '',
+): NoteSnapshot {
 	return {
 		path,
 		mtime: 1,
-		fields: resolveNote({ path, frontmatter: {}, body: '' }),
+		fields: resolveNote({ path, frontmatter: {}, body }),
 		tasks,
 		headings: [],
-		body: '',
+		body,
 	};
 }
 
@@ -41,7 +58,10 @@ function goal(
 	};
 }
 
-function project(path: string): ProjectNode {
+function project(
+	path: string,
+	goalPath: string | null = 'goals/Learn.md',
+): ProjectNode {
 	return {
 		path,
 		name: 'Ship the site',
@@ -52,10 +72,9 @@ function project(path: string): ProjectNode {
 			frontmatter: { tags: ['project'], status: 'Todo' },
 			body: '',
 		}),
-		goalPath: 'goals/Learn.md',
+		goalPath,
 	};
 }
-
 function indexOf(
 	goals: GoalNode[],
 	projects: ProjectNode[],
@@ -187,5 +206,88 @@ describe('goalDueInfo', () => {
 	it('has no due information when the goal sets no timespan', () => {
 		expect(goalDueInfo(null, '2025-01-01', NOW)).toBeNull();
 		expect(describeDue(null)).toBe('No due date');
+	});
+});
+
+describe('projectProgressView', () => {
+	const goalNode = goal('goals/Learn.md', { tags: ['goal'] });
+
+	it('reads tasks, status, goal, and Timekeep hours', () => {
+		const node = project('projects/Site.md');
+		const view = projectProgressView(
+			indexOf(
+				[goalNode],
+				[node],
+				[
+					snapshot('projects/Site.md', [
+						task(0, 'x'),
+						task(1, ' '),
+					], TIMEKEEP),
+				],
+			),
+			node,
+			DEFAULT_CONFIG,
+			NOW,
+		);
+
+		expect(view.counts).toEqual({ completed: 1, total: 2, percent: 50 });
+		expect(view.status).toBe('Todo');
+		expect(view.goal).toEqual({
+			path: 'goals/Learn.md',
+			name: 'Learn Python',
+		});
+		expect(view.workHours).toBe(2);
+		expect(view.empty).toBe(false);
+	});
+
+	it('works for a standalone project', () => {
+		const node = project('projects/Solo.md', null);
+		const view = projectProgressView(
+			indexOf([], [node], [snapshot('projects/Solo.md', [task(0, ' ')])]),
+			node,
+			DEFAULT_CONFIG,
+			NOW,
+		);
+
+		expect(view.goal).toBeNull();
+		expect(view.counts.total).toBe(1);
+	});
+
+	it('is empty without tasks but still reports metadata', () => {
+		const node = project('projects/Solo.md', null);
+		const view = projectProgressView(
+			indexOf([], [node], [snapshot('projects/Solo.md')]),
+			node,
+			DEFAULT_CONFIG,
+			NOW,
+		);
+
+		expect(view.empty).toBe(true);
+		expect(view.status).toBe('Todo');
+		expect(view.workHours).toBe(0);
+	});
+
+	it('skips Timekeep when the setting is off', () => {
+		const node = project('projects/Solo.md', null);
+		const view = projectProgressView(
+			indexOf(
+				[],
+				[node],
+				[snapshot('projects/Solo.md', [], TIMEKEEP)],
+			),
+			node,
+			{ ...DEFAULT_CONFIG, useTimekeep: false },
+			NOW,
+		);
+
+		expect(view.workHours).toBeNull();
+	});
+});
+
+describe('formatHours', () => {
+	it('rounds to two decimals and drops trailing zeros', () => {
+		expect(formatHours(2)).toBe('2 h');
+		expect(formatHours(19.234)).toBe('19.23 h');
+		expect(formatHours(0)).toBe('0 h');
 	});
 });
