@@ -29,4 +29,11 @@ export default defineConfig(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	{
+		files: ['**/*.test.ts'],
+		rules: {
+			// Tests run in Node only, never inside Obsidian or on mobile.
+			'obsidianmd/no-nodejs-modules': 'off',
+		},
+	},
 );
