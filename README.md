@@ -4,6 +4,12 @@ Questline is a community plugin for Obsidian. Goals are outcomes, projects are t
 
 > Goals are outcomes. Projects are the effort. Tasks are the unit.
 
+## Inspiration
+
+Questline is inspired by [Christian Bager Bach Houmann's Projects and Goals system](https://bagerbach.com/blog/projects-and-goals-obsidian/) and its [DemoVault](https://github.com/chhoumann/DemoVault). Questline rebuilds that goal-to-project-to-task model without Dataview, Kanban, QuickAdd, MetaEdit, or Templater.
+
+That guide is only the baseline for Questline, not a fixed specification: fields, behavior, and UI can and will change as the plugin evolves.
+
 ## Phase 0 verification
 
 The progress, timespan, and Timekeep engines are checked against a real
