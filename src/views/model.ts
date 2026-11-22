@@ -45,6 +45,13 @@ export interface ProjectProgressView {
 	empty: boolean;
 }
 
+export interface GoalProjectItem {
+	path: string;
+	name: string;
+	status: string | null;
+	counts: TaskProgress;
+}
+
 function dayWord(days: number): string {
 	return `${days} ${days === 1 ? 'day' : 'days'}`;
 }
@@ -173,4 +180,75 @@ export function projectProgressView(
 				: null,
 		empty: counts.total === 0,
 	};
+}
+
+/** Deterministic, locale-independent text order. */
+function compareText(left: string, right: string): number {
+	const a = left.toLowerCase();
+	const b = right.toLowerCase();
+
+	if (a < b) return -1;
+	if (a > b) return 1;
+
+	return 0;
+}
+
+/** Configured status order first, then unknown statuses, then no status. */
+function statusRank(status: string | null, statuses: readonly string[]): number {
+	if (status === null) return statuses.length + 1;
+
+	const found = statuses.findIndex(
+		(value) => value.toLowerCase() === status.toLowerCase(),
+	);
+
+	return found < 0 ? statuses.length : found;
+}
+
+/**
+ * The projects linked to a goal, each with its own progress. Duplicate links
+ * collapse, and the order is the configured status order then the name, so
+ * the list never reshuffles between refreshes.
+ */
+export function goalProjectsView(
+	index: QuestlineIndex,
+	goal: GoalNode,
+	config: QuestlineConfig,
+): GoalProjectItem[] {
+	const items: GoalProjectItem[] = [];
+	const seen = new Set<string>();
+
+	for (const path of goal.projectPaths) {
+		if (seen.has(path)) continue;
+		seen.add(path);
+
+		const project = index.projectByPath.get(path);
+		if (!project) continue;
+
+		const note = index.notes.get(path);
+		const counts = note
+			? computeProjectProgress(
+					{ tasks: note.tasks, headings: note.headings },
+					config.taskScope,
+				)
+			: { completed: 0, total: 0, percent: 0 };
+
+		items.push({
+			path: project.path,
+			name: project.name,
+			status: project.fields.status,
+			counts,
+		});
+	}
+
+	return items.sort((left, right) => {
+		const rank =
+			statusRank(left.status, config.projectStatuses) -
+			statusRank(right.status, config.projectStatuses);
+		if (rank !== 0) return rank;
+
+		const name = compareText(left.name, right.name);
+		if (name !== 0) return name;
+
+		return compareText(left.path, right.path);
+	});
 }

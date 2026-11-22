@@ -13,6 +13,7 @@ import {
 	formatHours,
 	goalDueInfo,
 	goalProgressView,
+	goalProjectsView,
 	projectProgressView,
 } from './model';
 
@@ -61,15 +62,20 @@ function goal(
 function project(
 	path: string,
 	goalPath: string | null = 'goals/Learn.md',
+	name = 'Ship the site',
+	status: string | null = 'Todo',
 ): ProjectNode {
 	return {
 		path,
-		name: 'Ship the site',
+		name,
 		folder: 'projects',
 		folderProject: null,
 		fields: resolveNote({
 			path,
-			frontmatter: { tags: ['project'], status: 'Todo' },
+			frontmatter: {
+				tags: ['project'],
+				...(status === null ? {} : { status }),
+			},
 			body: '',
 		}),
 		goalPath,
@@ -289,5 +295,58 @@ describe('formatHours', () => {
 		expect(formatHours(2)).toBe('2 h');
 		expect(formatHours(19.234)).toBe('19.23 h');
 		expect(formatHours(0)).toBe('0 h');
+	});
+});
+
+describe('goalProjectsView', () => {
+	it('lists each project once, in status then name order', () => {
+		const node = goal('goals/Learn.md', { tags: ['goal'] }, [
+			'projects/Beta.md',
+			'projects/Alpha.md',
+			'projects/Alpha.md',
+			'projects/Gamma.md',
+		]);
+		const items = goalProjectsView(
+			indexOf(
+				[node],
+				[
+					project('projects/Alpha.md', 'goals/Learn.md', 'Alpha', 'In Progress'),
+					project('projects/Beta.md', 'goals/Learn.md', 'Beta', 'Todo'),
+					project('projects/Gamma.md', 'goals/Learn.md', 'Gamma', null),
+				],
+				[
+					snapshot('projects/Alpha.md', [task(0, 'x'), task(1, ' ')]),
+					snapshot('projects/Beta.md', [task(0, 'x')]),
+					snapshot('projects/Gamma.md'),
+				],
+			),
+			node,
+			DEFAULT_CONFIG,
+		);
+
+		expect(items.map((item) => item.name)).toEqual([
+			'Beta',
+			'Alpha',
+			'Gamma',
+		]);
+		expect(items[0]?.counts).toEqual({
+			completed: 1,
+			total: 1,
+			percent: 100,
+		});
+		expect(items[1]?.counts.percent).toBe(50);
+		expect(items[2]?.status).toBeNull();
+	});
+
+	it('is empty when the goal links no projects', () => {
+		const node = goal('goals/Learn.md', { tags: ['goal'] });
+
+		expect(
+			goalProjectsView(
+				indexOf([node], [], [snapshot('goals/Learn.md')]),
+				node,
+				DEFAULT_CONFIG,
+			),
+		).toEqual([]);
 	});
 });

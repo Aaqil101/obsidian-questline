@@ -92,3 +92,20 @@
 	color: var(--text-muted);
 	font-style: italic;
 }
+
+.questline-project-list {
+	margin: 4px 0 0;
+	padding-left: 1.25em;
+}
+
+.questline-project-item {
+	margin: 3px 0;
+}
+
+.questline-project-meta {
+	display: inline-flex;
+	gap: 10px;
+	margin-left: 8px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}

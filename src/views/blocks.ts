@@ -9,6 +9,7 @@ import {
 	describeDue,
 	formatHours,
 	goalProgressView,
+	goalProjectsView,
 	projectProgressView,
 } from './model';
 
@@ -16,6 +17,8 @@ const NOT_A_GOAL =
 	'This note is not a goal. Add the goal tag to show progress.';
 const NO_GOAL_DATA =
 	'No tasks or projects yet. Add tasks to this goal or link a project.';
+const NO_GOAL_PROJECTS =
+	'No projects yet. Create a project linked to this goal.';
 const NOT_A_PROJECT =
 	'This note is not a project. Add the project tag and a status to show progress.';
 const NO_PROJECT_TASKS =
@@ -206,6 +209,65 @@ class ProjectProgressBlock extends QuestlineBlock {
 	}
 }
 
+class GoalProjectsBlock extends QuestlineBlock {
+	protected paintBlock(containerEl: HTMLElement): void {
+		const index = this.plugin.getIndex();
+		const goal = index.goalByPath.get(this.sourcePath);
+
+		if (!goal) {
+			renderEmpty(containerEl, NOT_A_GOAL);
+
+			return;
+		}
+
+		const projects = goalProjectsView(
+			index,
+			goal,
+			this.plugin.getConfig(),
+		);
+
+		if (projects.length === 0) {
+			renderEmpty(containerEl, NO_GOAL_PROJECTS);
+
+			return;
+		}
+
+		const list = containerEl.createEl('ul', {
+			cls: 'questline-project-list',
+		});
+
+		for (const project of projects) {
+			const entry = list.createEl('li', {
+				cls: 'questline-project-item',
+			});
+			const link = entry.createEl('a', {
+				cls: 'internal-link questline-project-link',
+				text: project.name,
+			});
+			link.setAttr('href', project.path);
+			link.addEventListener('click', (event) => {
+				this.openPath(project.path, event);
+			});
+
+			const meta = entry.createSpan({
+				cls: 'questline-project-meta',
+			});
+			meta.createSpan({
+				cls: 'questline-project-status',
+				text: project.status ?? 'No status',
+			});
+			meta.createSpan({
+				cls: 'questline-project-progress',
+				text:
+					project.counts.total === 0
+						? 'No tasks'
+						: `${project.counts.percent}% ` +
+							`(${project.counts.completed}/${project.counts.total})`,
+			});
+		}
+	}
+}
+
 export function registerProgressBlocks(plugin: QuestlinePlugin): void {
 	plugin.registerMarkdownCodeBlockProcessor(
 		'goal-progress',
@@ -217,6 +279,12 @@ export function registerProgressBlocks(plugin: QuestlinePlugin): void {
 		'project-progress',
 		(_source, el, ctx) => {
 			ctx.addChild(new ProjectProgressBlock(el, plugin, ctx.sourcePath));
+		},
+	);
+	plugin.registerMarkdownCodeBlockProcessor(
+		'goal-projects',
+		(_source, el, ctx) => {
+			ctx.addChild(new GoalProjectsBlock(el, plugin, ctx.sourcePath));
 		},
 	);
 }
