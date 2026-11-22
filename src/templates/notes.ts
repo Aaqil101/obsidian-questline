@@ -49,12 +49,40 @@ export async function readTemplate(
 	app: App,
 	path: string,
 ): Promise<TemplateDocument | null> {
-	const target = templateNotePath(path);
+	const file = findTemplateFile(app, path);
+
+	return file ? readTemplateFile(app, file) : null;
+}
+
+/**
+ * Find a template note. A stored path is tried as written first, then
+ * Obsidian's own link resolution, so a renamed note with a stale link still
+ * resolves.
+ */
+export function findTemplateFile(
+	app: App,
+	value: string,
+	sourcePath = '',
+): TFile | null {
+	const path = templateNotePath(value);
+	if (path) {
+		const direct = app.vault.getAbstractFileByPath(path);
+		if (direct instanceof TFile && direct.extension === 'md') return direct;
+	}
+
+	const target = value.trim();
 	if (!target) return null;
 
-	const file = app.vault.getAbstractFileByPath(target);
-	if (!(file instanceof TFile) || file.extension !== 'md') return null;
+	const linked = app.metadataCache.getFirstLinkpathDest(target, sourcePath);
 
+	return linked instanceof TFile && linked.extension === 'md' ? linked : null;
+}
+
+/** Read a template note that has already been found. */
+export async function readTemplateFile(
+	app: App,
+	file: TFile,
+): Promise<TemplateDocument> {
 	const text = await app.vault.cachedRead(file);
 	const { frontmatter, body } = splitFrontmatter(text);
 
