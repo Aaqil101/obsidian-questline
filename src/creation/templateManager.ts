@@ -169,7 +169,15 @@ async function clearGoalTemplate(
 		removeFrontmatterKey(frontmatter, 'project_template');
 	});
 
-	new Notice('Cleared the custom template. This goal uses the global one.');
+	const global = findTemplateFile(
+		plugin.app,
+		plugin.getConfig().projectTemplate,
+	);
+	new Notice(
+		global
+			? 'Cleared the custom template. This goal uses the global template.'
+			: 'Cleared the custom template. This goal uses the built-in template.',
+	);
 }
 
 class GoalTemplateModal extends Modal {

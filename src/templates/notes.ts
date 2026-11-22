@@ -113,7 +113,7 @@ export async function ensureVaultFolder(
 	const existing = app.vault.getAbstractFileByPath(path);
 	if (existing instanceof TFolder) return path;
 	if (existing) {
-		throw new Error(`A note already uses the template folder path: ${path}`);
+		throw new Error(`A note already uses this folder path: ${path}`);
 	}
 
 	const slash = path.lastIndexOf('/');
