@@ -1,4 +1,5 @@
 import { resolveNote } from '../fields/resolve';
+import { DEFAULT_CONFIG, type QuestlineConfig } from '../settings/types';
 import { buildIndex, emptyIndex } from './build';
 import type {
 	HeadingItem,
@@ -31,6 +32,8 @@ export interface IndexServiceOptions {
 	debounceMs?: number;
 	/** Timer source. The plugin passes window-backed timers for popout windows. */
 	timers?: TimerApi;
+	/** Validated settings that decide which notes are goals and projects. */
+	config?: QuestlineConfig;
 }
 
 export interface TimerApi {
@@ -60,6 +63,7 @@ export class QuestlineIndexService {
 	private readonly listeners = new Set<RefreshListener>();
 	private readonly debounceMs: number;
 	private readonly timers: TimerApi;
+	private config: QuestlineConfig;
 	private index = emptyIndex();
 	private queue: Promise<void> = Promise.resolve();
 	private timer: unknown = null;
@@ -70,10 +74,38 @@ export class QuestlineIndexService {
 	) {
 		this.debounceMs = options.debounceMs ?? DEFAULT_DEBOUNCE_MS;
 		this.timers = options.timers ?? DEFAULT_TIMERS;
+		this.config = options.config ?? DEFAULT_CONFIG;
 	}
 
 	getIndex(): QuestlineIndex {
 		return this.index;
+	}
+
+	getConfig(): QuestlineConfig {
+		return this.config;
+	}
+
+	/**
+	 * Swap in new settings. Tags change how every note resolves, so the cache
+	 * is dropped after the current scan finishes and the next refresh reads
+	 * the vault again. Settings that do not affect the index leave it alone.
+	 */
+	async setConfig(config: QuestlineConfig): Promise<boolean> {
+		const retag =
+			config.goalTag !== this.config.goalTag ||
+			config.projectTag !== this.config.projectTag;
+
+		if (!retag) {
+			this.config = config;
+			return false;
+		}
+
+		// Wait, so an in-flight scan cannot leave a mix of old and new tags.
+		await this.queue;
+		this.config = config;
+		this.cache.clear();
+
+		return true;
 	}
 
 	/** Subscribe to rebuilt indexes. Returns an unsubscribe function. */
@@ -147,11 +179,17 @@ export class QuestlineIndexService {
 			this.cache.set(file.path, {
 				path: file.path,
 				mtime: file.mtime,
-				fields: resolveNote({
-					path: file.path,
-					frontmatter: data.frontmatter,
-					body: data.body,
-				}),
+				fields: resolveNote(
+					{
+						path: file.path,
+						frontmatter: data.frontmatter,
+						body: data.body,
+					},
+					{
+						goalTag: this.config.goalTag,
+						projectTag: this.config.projectTag,
+					},
+				),
 				tasks: data.tasks,
 				headings: data.headings,
 				body: data.body,

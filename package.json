@@ -22,10 +22,14 @@
 		"eslint-plugin-obsidianmd": "^0.4.0",
 		"globals": "^17.6.0",
 		"jiti": "^2.6.1",
-		"obsidian": "latest",
+		"obsidian": "^1.14.4",
 		"typescript": "^5.8.3",
 		"typescript-eslint": "^8.59.1",
 		"vitest": "^3.2.7",
 		"yaml": "^2.9.1"
+	},
+	"allowScripts": {
+		"esbuild@0.25.5": true,
+		"esbuild@0.28.2": true
 	}
 }

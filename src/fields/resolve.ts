@@ -10,6 +10,13 @@ export interface NoteSource {
 	body: string;
 }
 
+export interface ResolveOptions {
+	/** Tag that marks a goal. Defaults to `goal`. */
+	goalTag?: string;
+	/** Tag that marks a project. Defaults to `project`. */
+	projectTag?: string;
+}
+
 export interface ResolvedFields {
 	path: string;
 	tags: string[];
@@ -130,9 +137,14 @@ function unique(values: string[]): string[] {
 	return [...new Set(values)];
 }
 
-export function resolveNote(source: NoteSource): ResolvedFields {
+export function resolveNote(
+	source: NoteSource,
+	options: ResolveOptions = {},
+): ResolvedFields {
 	const frontmatter = source.frontmatter ?? {};
 	const inline = parseInlineFields(source.body);
+	const goalTag = normalizeTag(options.goalTag ?? 'goal');
+	const projectTag = normalizeTag(options.projectTag ?? 'project');
 
 	/** Frontmatter wins, then the inline field, then nothing. */
 	const text = (key: string): string | null =>
@@ -163,7 +175,7 @@ export function resolveNote(source: NoteSource): ResolvedFields {
 	const projectClass = text('class');
 	const templateText = text('project_template');
 	const goalText = text('goal');
-	const isGoal = tags.includes('goal');
+	const isGoal = tags.includes(goalTag);
 	const numbers = (key: string): number | null =>
 		asNumber(lookup(frontmatter, key)) ?? asNumber(inline.get(key.toLowerCase()));
 
@@ -171,7 +183,7 @@ export function resolveNote(source: NoteSource): ResolvedFields {
 		path: source.path,
 		tags,
 		isGoal,
-		isProject: tags.includes('project'),
+		isProject: tags.includes(projectTag),
 		hasProjectMarker:
 			status !== null ||
 			projectClass?.toLowerCase() === 'project class',

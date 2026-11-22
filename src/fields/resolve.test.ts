@@ -214,6 +214,29 @@ describe('resolveNote', () => {
 		expect(fields.isProject).toBe(true);
 	});
 
+	it('uses configured goal and project tags', () => {
+		const custom = resolveNote(
+			{
+				path: 'note.md',
+				frontmatter: { tags: ['#Outcome', 'effort'], status: 'In Progress' },
+				body: '',
+			},
+			{ goalTag: '#Outcome', projectTag: 'Effort' },
+		);
+
+		expect(custom.isGoal).toBe(true);
+		expect(custom.isProject).toBe(true);
+
+		const defaults = resolveNote({
+			path: 'note.md',
+			frontmatter: { tags: ['outcome', 'effort'] },
+			body: '',
+		});
+
+		expect(defaults.isGoal).toBe(false);
+		expect(defaults.isProject).toBe(false);
+	});
+
 	it('unwraps the project template link', () => {
 		const fields = resolveNote({
 			path: 'note.md',

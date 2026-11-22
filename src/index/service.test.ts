@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_CONFIG, resolveConfig } from '../settings/types';
 import { QuestlineIndexService } from './service';
 import type { NoteData, NoteFile, NoteReader } from './service';
 
@@ -169,6 +170,66 @@ describe('QuestlineIndexService', () => {
 		await vi.advanceTimersByTimeAsync(500);
 
 		expect(reader.reads).toEqual([]);
+	});
+
+	it('re-resolves notes when the goal and project tags change', async () => {
+		const reader = new FakeReader();
+		reader.notes.set('outcomes/Learn Python.md', {
+			mtime: 1,
+			frontmatter: { tags: 'outcome' },
+			body: '',
+		});
+		reader.notes.set('efforts/Folio.md', {
+			mtime: 1,
+			frontmatter: { tags: 'effort', status: 'In Progress' },
+			body: 'Goal:: [[Learn Python]]',
+		});
+		const service = new QuestlineIndexService(reader);
+
+		const before = await service.refresh();
+		expect(before.goals).toEqual([]);
+		expect(before.projects).toEqual([]);
+
+		reader.reads = [];
+		const config = resolveConfig({
+			goalTag: 'outcome',
+			projectTag: 'effort',
+		});
+		const retagged = await service.setConfig(config);
+
+		expect(retagged).toBe(true);
+
+		const after = await service.refresh();
+		expect(reader.reads).toHaveLength(2);
+		expect(after.goals.map((node) => node.path)).toEqual([
+			'outcomes/Learn Python.md',
+		]);
+		expect(after.projects.map((node) => node.path)).toEqual([
+			'efforts/Folio.md',
+		]);
+		expect(after.projectByPath.get('efforts/Folio.md')?.goalPath).toBe(
+			'outcomes/Learn Python.md',
+		);
+	});
+
+	it('keeps the cache when settings do not affect the index', async () => {
+		const reader = new FakeReader();
+		seed(reader);
+		const service = new QuestlineIndexService(reader);
+		const first = await service.refresh();
+
+		reader.reads = [];
+		const retagged = await service.setConfig({
+			...DEFAULT_CONFIG,
+			goalFolder: 'Outcomes',
+		});
+
+		expect(retagged).toBe(false);
+		expect(service.getConfig().goalFolder).toBe('Outcomes');
+
+		const second = await service.refresh();
+		expect(reader.reads).toEqual([]);
+		expect(second).toBe(first);
 	});
 
 	it('keeps indexing when one note cannot be read', async () => {

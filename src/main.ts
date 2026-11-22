@@ -1,26 +1,33 @@
-import { Plugin, TFile } from 'obsidian';
+import { Plugin, TFile, TFolder } from 'obsidian';
 import { QuestlineIndexService } from './index/service';
 import { createVaultReader, WINDOW_TIMERS } from './index/source';
 import type { QuestlineIndex } from './index/types';
 import {
 	DEFAULT_SETTINGS,
-	QuestlineSettings,
 	QuestlineSettingTab,
+	resolveConfig,
+	type FolderKind,
+	type QuestlineConfig,
+	type QuestlineSettings,
 } from './settings';
 
 export default class QuestlinePlugin extends Plugin {
 	settings!: QuestlineSettings;
+	private config!: QuestlineConfig;
 	private questline!: QuestlineIndexService;
 
 	async onload() {
 		await this.loadSettings();
+		this.config = this.buildConfig();
+
+		this.questline = new QuestlineIndexService(createVaultReader(this.app), {
+			timers: WINDOW_TIMERS,
+			config: this.config,
+		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new QuestlineSettingTab(this.app, this));
 
-		this.questline = new QuestlineIndexService(createVaultReader(this.app), {
-			timers: WINDOW_TIMERS,
-		});
 		this.registerIndexEvents();
 		this.app.workspace.onLayoutReady(() => {
 			void this.questline.refresh();
@@ -36,9 +43,36 @@ export default class QuestlinePlugin extends Plugin {
 		return this.questline.getIndex();
 	}
 
+	/** Validated settings shared by creation, the index, and the views. */
+	getConfig(): QuestlineConfig {
+		return this.config;
+	}
+
+	/** Persist a settings change and rebuild the index if it depends on it. */
+	async updateSettings(patch: Partial<QuestlineSettings>): Promise<void> {
+		this.settings = { ...this.settings, ...patch };
+		await this.saveSettings();
+
+		this.config = this.buildConfig();
+		if (await this.questline.setConfig(this.config)) {
+			this.questline.scheduleRefresh();
+		}
+	}
+
 	/** Subscribe to index rebuilds. Returns an unsubscribe function. */
 	onIndexRefresh(listener: (index: QuestlineIndex) => void): () => void {
 		return this.questline.onRefresh(listener);
+	}
+
+	private buildConfig(): QuestlineConfig {
+		return resolveConfig(this.settings, (path) => this.folderKind(path));
+	}
+
+	private folderKind(path: string): FolderKind {
+		const entry = this.app.vault.getAbstractFileByPath(path);
+		if (!entry) return 'missing';
+
+		return entry instanceof TFolder ? 'folder' : 'file';
 	}
 
 	private registerIndexEvents(): void {
@@ -69,11 +103,9 @@ export default class QuestlinePlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<QuestlineSettings>,
-		);
+		const stored = (await this.loadData()) as Partial<QuestlineSettings> | null;
+
+		this.settings = { ...DEFAULT_SETTINGS, ...(stored ?? {}) };
 	}
 
 	async saveSettings() {

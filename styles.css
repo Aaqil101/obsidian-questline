@@ -1,8 +1,39 @@
 /*
+ * Questline settings.
+ *
+ * The card look comes from Obsidian's native `.setting-group` /
+ * `.setting-items` classes; only the pieces those classes do not cover are
+ * styled here.
+ */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+/* Prose inside a settings card needs the card's own inset. */
+.questline-settings-note {
+	margin: 0;
+	padding: var(--setting-items-padding-y, 16px)
+		var(--setting-items-padding-x, 16px);
+	color: var(--text-muted);
+}
 
-If your plugin does not need CSS, delete this file.
+/* Editable list rows carry only a control: the value is the label, so the
+   empty name column is hidden and the input fills the row. */
+.questline-list-item .setting-item-info {
+	display: none;
+}
 
-*/
+.questline-list-item .setting-item-control {
+	flex: 1 1 auto;
+	justify-content: flex-start;
+	gap: 8px;
+}
+
+.questline-list-item .setting-item-control input[type='text'] {
+	flex: 1 1 auto;
+	width: 100%;
+}
+
+/* Native rows leave space for a name and description; these have neither. */
+.setting-group .questline-list-item.setting-item {
+	align-items: center;
+	padding-top: 6px;
+	padding-bottom: 6px;
+}

@@ -50,7 +50,7 @@ export function asTextList(value: unknown): string[] {
 
 /** Tags are case-insensitive and are stored without their leading hash. */
 export function normalizeTag(tag: string): string {
-	return tag.replace(/^#+/, '').trim().toLowerCase();
+	return tag.trim().replace(/^#+\s*/, '').toLowerCase();
 }
 
 /**
