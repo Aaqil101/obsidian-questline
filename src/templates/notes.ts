@@ -76,7 +76,10 @@ function joinPath(folder: string, fileName: string): string {
 }
 
 /** Create a folder and its parents, and refuse a note sitting on the path. */
-async function ensureFolder(app: App, path: string): Promise<string> {
+export async function ensureVaultFolder(
+	app: App,
+	path: string,
+): Promise<string> {
 	if (!path) return '';
 
 	const existing = app.vault.getAbstractFileByPath(path);
@@ -86,7 +89,7 @@ async function ensureFolder(app: App, path: string): Promise<string> {
 	}
 
 	const slash = path.lastIndexOf('/');
-	await ensureFolder(app, slash < 0 ? '' : path.slice(0, slash));
+	await ensureVaultFolder(app, slash < 0 ? '' : path.slice(0, slash));
 
 	try {
 		await app.vault.createFolder(path);
@@ -114,7 +117,7 @@ export async function createStarterTemplates(
 		return { created: [], existing: [], folderMissing: true };
 	}
 
-	const folder = await ensureFolder(app, config.templateFolder);
+	const folder = await ensureVaultFolder(app, config.templateFolder);
 	const result: StarterResult = {
 		created: [],
 		existing: [],

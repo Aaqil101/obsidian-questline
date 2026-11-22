@@ -11,6 +11,7 @@ import {
 	type QuestlineSettings,
 } from './settings';
 import { registerTemplateCommands } from './templates/commands';
+import { registerCreationCommands } from './creation/commands';
 import {
 	createStarterTemplates as writeStarterTemplates,
 } from './templates/notes';
@@ -34,6 +35,7 @@ export default class QuestlinePlugin extends Plugin {
 		this.addSettingTab(new QuestlineSettingTab(this.app, this));
 
 		registerTemplateCommands(this);
+		registerCreationCommands(this);
 		this.registerIndexEvents();
 		this.app.workspace.onLayoutReady(() => {
 			void this.questline.refresh();

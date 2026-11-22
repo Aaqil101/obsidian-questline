@@ -242,3 +242,13 @@ export function folderSetting(row: Setting, options: FolderRowOptions): void {
 export function noteSetting(row: Setting, options: NoteRowOptions): void {
 	pathRow(row, 'note', options);
 }
+
+/** Attach folder typeahead to an input outside a settings row. */
+export function attachFolderSuggest(app: App, inputEl: HTMLInputElement): void {
+	new FolderSuggest(app, inputEl);
+}
+
+/** Attach note typeahead to an input outside a settings row. */
+export function attachNoteSuggest(app: App, inputEl: HTMLInputElement): void {
+	new NoteSuggest(app, inputEl);
+}

@@ -15,6 +15,8 @@ export interface TemplateValues {
 	author?: string | null;
 	subtitle?: string | null;
 	status?: string | null;
+	reason?: string | null;
+	timespan?: string | null;
 }
 
 const TOKEN = /\{\{([^{}]*)\}\}/g;
@@ -174,6 +176,10 @@ function simpleToken(name: string, values: TemplateValues): string | null {
 			return values.subtitle ?? '';
 		case 'status':
 			return values.status ?? '';
+		case 'reason':
+			return values.reason ?? '';
+		case 'timespan':
+			return values.timespan ?? '';
 		default:
 			return null;
 	}
