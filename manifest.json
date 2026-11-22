@@ -2,10 +2,9 @@
 	"id": "questline",
 	"name": "Questline",
 	"version": "1.0.0",
-	"minAppVersion": "1.0.0",
+	"minAppVersion": "1.15.1",
 	"description": "Track goals and projects in plain Markdown, with task progress rolling up from projects to goals.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"author": "Aaqil",
+	"authorUrl": "https://github.com/Aaqil101",
 	"isDesktopOnly": false
 }
