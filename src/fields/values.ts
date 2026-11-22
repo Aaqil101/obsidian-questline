@@ -26,6 +26,16 @@ export function asText(value: unknown): string | null {
 	return null;
 }
 
+/** Coerce a value to a finite number, or null when it holds nothing numeric. */
+export function asNumber(value: unknown): number | null {
+	const text = asText(value);
+	if (text === null) return null;
+
+	const number = Number(text);
+
+	return Number.isFinite(number) ? number : null;
+}
+
 /** Coerce a value to a list of non-empty strings. Scalars become one-item lists. */
 export function asTextList(value: unknown): string[] {
 	const values: string[] = [];

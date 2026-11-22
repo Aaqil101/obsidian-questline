@@ -1,4 +1,4 @@
-import { asTagList, asText, asTextList, normalizeTag } from './values';
+import { asNumber, asTagList, asText, asTextList, normalizeTag } from './values';
 import { parseLink, type ResolvedLink } from './wikilink';
 
 export interface NoteSource {
@@ -20,6 +20,8 @@ export interface ResolvedFields {
 	/** Goal category, falling back to the legacy `status` value. */
 	category: string | null;
 	status: string | null;
+	/** `type` frontmatter, used to keep `questline-template` notes out of the index. */
+	noteType: string | null;
 	goal: ResolvedLink | null;
 	projectTemplate: string | null;
 	timespan: string | null;
@@ -29,6 +31,10 @@ export interface ResolvedFields {
 	projectClass: string | null;
 	created: string | null;
 	aliases: string[];
+	/** Manual progress fields; legacy Dataview expressions resolve to null. */
+	progress: number | null;
+	target: number | null;
+	start: number | null;
 }
 
 const INLINE_FIELD = /^\s*(?:[-*+]\s+)?([A-Za-z][\w -]*?)\s*::\s*(.+?)\s*$/;
@@ -158,6 +164,8 @@ export function resolveNote(source: NoteSource): ResolvedFields {
 	const templateText = text('project_template');
 	const goalText = text('goal');
 	const isGoal = tags.includes('goal');
+	const numbers = (key: string): number | null =>
+		asNumber(lookup(frontmatter, key)) ?? asNumber(inline.get(key.toLowerCase()));
 
 	return {
 		path: source.path,
@@ -170,6 +178,7 @@ export function resolveNote(source: NoteSource): ResolvedFields {
 		// A goal's category is the legacy status; a project's status is not one.
 		category: text('category') ?? (isGoal ? status : null),
 		status,
+		noteType: text('type'),
 		goal: goalText ? parseLink(goalText) : null,
 		projectTemplate: templateText
 			? (parseLink(templateText)?.target ?? null)
@@ -183,5 +192,8 @@ export function resolveNote(source: NoteSource): ResolvedFields {
 		projectClass,
 		created: text('created'),
 		aliases: list(['aliases', 'alias']),
+		progress: numbers('progress'),
+		target: numbers('target'),
+		start: numbers('start'),
 	};
 }

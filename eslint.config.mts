@@ -30,6 +30,14 @@ export default defineConfig(
 	},
 	...obsidianmd.configs.recommended,
 	{
+		files: ['src/index/service.ts'],
+		rules: {
+			// The index service stays runtime-agnostic so unit tests can run it
+			// in Node; the plugin injects window timers for popout support.
+			'obsidianmd/no-global-this': 'off',
+		},
+	},
+	{
 		files: ['**/*.test.ts'],
 		rules: {
 			// Tests run in Node only, never inside Obsidian or on mobile.

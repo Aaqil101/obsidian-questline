@@ -169,8 +169,9 @@ describe('resolveNote', () => {
 			body: legacyGoalBody,
 		});
 
-		expect(fields).not.toHaveProperty('progress');
-		expect(fields).not.toHaveProperty('target');
+		expect(fields.progress).toBeNull();
+		expect(fields.target).toBeNull();
+		expect(fields.start).toBeNull();
 		expect(fields).not.toHaveProperty('bar');
 		expect(fields).not.toHaveProperty('projects');
 		expect(fields.reason).toBeNull();
@@ -221,6 +222,40 @@ describe('resolveNote', () => {
 		});
 
 		expect(fields.projectTemplate).toBe('Templates/Project');
+	});
+
+	it('reads the note type so templates can be excluded', () => {
+		const fields = resolveNote({
+			path: 'templates/project.md',
+			frontmatter: { tags: 'project', type: 'questline-template' },
+			body: '',
+		});
+
+		expect(fields.noteType).toBe('questline-template');
+	});
+
+	it('reads manual progress numbers and ignores expressions', () => {
+		const manual = resolveNote({
+			path: 'goal.md',
+			frontmatter: { tags: 'goal', progress: 40, target: 100, start: 10 },
+			body: '',
+		});
+		const legacy = resolveNote({
+			path: 'legacy.md',
+			frontmatter: { tags: 'goal' },
+			body: [
+				'Progress:: `$= dv.view("progress")`',
+				'Target:: `$= dv.view("target")`',
+				'Start:: `$= dv.view("start")`',
+			].join('\n'),
+		});
+
+		expect(manual.progress).toBe(40);
+		expect(manual.target).toBe(100);
+		expect(manual.start).toBe(10);
+		expect(legacy.progress).toBeNull();
+		expect(legacy.target).toBeNull();
+		expect(legacy.start).toBeNull();
 	});
 
 	it('handles a missing frontmatter block and empty body without throwing', () => {
