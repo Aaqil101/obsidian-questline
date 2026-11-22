@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
+	"name": "obsidian-questline",
 	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "Track goals and projects in plain Markdown, with task progress rolling up from projects to goals.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
