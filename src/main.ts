@@ -12,6 +12,7 @@ import {
 } from './settings';
 import { registerTemplateCommands } from './templates/commands';
 import { registerCreationCommands } from './creation/commands';
+import { registerProgressBlocks } from './views/blocks';
 import {
 	createStarterTemplates as writeStarterTemplates,
 } from './templates/notes';
@@ -36,6 +37,7 @@ export default class QuestlinePlugin extends Plugin {
 
 		registerTemplateCommands(this);
 		registerCreationCommands(this);
+		registerProgressBlocks(this);
 		this.registerIndexEvents();
 		this.app.workspace.onLayoutReady(() => {
 			void this.questline.refresh();

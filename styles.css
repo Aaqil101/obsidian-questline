@@ -37,3 +37,58 @@
 	padding-top: 6px;
 	padding-bottom: 6px;
 }
+
+/*
+ * Progress blocks. A block reads only the cached index, so repainting is
+ * cheap; the transition keeps a checkbox change from jumping.
+ */
+
+.questline-block {
+	padding: 4px 0;
+}
+
+.questline-progress-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.questline-progress {
+	flex: 1 1 auto;
+	height: 8px;
+	overflow: hidden;
+	border-radius: 999px;
+	background-color: var(--background-modifier-border);
+}
+
+.questline-progress-fill {
+	height: 100%;
+	border-radius: inherit;
+	background-color: var(--interactive-accent);
+	transition: width 150ms ease;
+}
+
+.questline-percent {
+	min-width: 3.5em;
+	color: var(--text-muted);
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+
+.questline-stats {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 14px;
+	margin-top: 6px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.questline-stat {
+	white-space: nowrap;
+}
+
+.questline-empty {
+	color: var(--text-muted);
+	font-style: italic;
+}
