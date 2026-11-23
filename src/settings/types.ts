@@ -4,6 +4,9 @@ import { ALL_TASKS, type TaskScope } from '../progress/tasks';
 /** How a goal decides its progress. `auto` lets manual fields win. */
 export type ProgressMode = 'auto' | 'tasks' | 'manual';
 
+/** How the progress bar fill is painted. */
+export type ProgressBarStyle = 'rainbow' | 'multicolor' | 'normal';
+
 /** Whether progress counts every task or only the tasks under one heading. */
 export type TaskScopeMode = 'all' | 'heading';
 
@@ -28,6 +31,7 @@ export interface QuestlineSettings {
 	taskScopeHeading: string;
 	useTimekeep: boolean;
 	openAfterCreate: boolean;
+	progressBarStyle: ProgressBarStyle;
 }
 
 export const DEFAULT_GOAL_CATEGORIES = [
@@ -73,6 +77,7 @@ export const DEFAULT_SETTINGS: QuestlineSettings = {
 	taskScopeHeading: 'Tasks',
 	useTimekeep: true,
 	openAfterCreate: true,
+	progressBarStyle: 'rainbow',
 };
 
 /**
@@ -96,6 +101,7 @@ export interface QuestlineConfig {
 	taskScope: TaskScope;
 	useTimekeep: boolean;
 	openAfterCreate: boolean;
+	progressBarStyle: ProgressBarStyle;
 }
 
 export type FolderKind = 'folder' | 'file' | 'missing';
@@ -172,6 +178,12 @@ function cleanProgressMode(value: unknown): ProgressMode {
 	return value === 'tasks' || value === 'manual' || value === 'auto'
 		? value
 		: DEFAULT_SETTINGS.progressMode;
+}
+
+function cleanProgressBarStyle(value: unknown): ProgressBarStyle {
+	return value === 'multicolor' || value === 'normal' || value === 'rainbow'
+		? value
+		: DEFAULT_SETTINGS.progressBarStyle;
 }
 
 function cleanTaskScope(mode: unknown, heading: unknown): TaskScope {
@@ -253,6 +265,7 @@ export function resolveConfig(
 			stored.openAfterCreate,
 			DEFAULT_SETTINGS.openAfterCreate,
 		),
+		progressBarStyle: cleanProgressBarStyle(stored.progressBarStyle),
 	};
 }
 

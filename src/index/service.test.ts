@@ -73,6 +73,21 @@ describe('QuestlineIndexService', () => {
 		expect(second).toBe(first);
 	});
 
+	it('re-emits the current index without reading the vault', async () => {
+		const reader = new FakeReader();
+		seed(reader);
+		const service = new QuestlineIndexService(reader);
+		const index = await service.refresh();
+		const listener = vi.fn();
+
+		reader.reads = [];
+		service.onRefresh(listener);
+		service.notifyRefresh();
+
+		expect(listener).toHaveBeenCalledWith(index);
+		expect(reader.reads).toEqual([]);
+	});
+
 	it('rereads only a note whose mtime changed', async () => {
 		const reader = new FakeReader();
 		seed(reader);

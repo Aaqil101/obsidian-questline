@@ -5,6 +5,7 @@
  */
 import { MarkdownRenderChild } from 'obsidian';
 import type QuestlinePlugin from '../main';
+import type { ProgressBarStyle } from '../settings/types';
 import {
 	describeDue,
 	formatHours,
@@ -67,6 +68,7 @@ function renderProgressRow(
 	containerEl: HTMLElement,
 	percent: number,
 	label: string,
+	style: ProgressBarStyle,
 ): void {
 	const row = containerEl.createDiv({ cls: 'questline-progress-row' });
 	const bar = row.createDiv({
@@ -80,6 +82,7 @@ function renderProgressRow(
 		},
 	});
 	const fill = bar.createDiv({ cls: 'questline-progress-fill' });
+	fill.addClass(`questline-progress-fill--${style}`);
 	fill.setCssStyles({ width: `${Math.max(0, Math.min(100, percent))}%` });
 
 	row.createSpan({ cls: 'questline-percent', text: `${percent}%` });
@@ -133,12 +136,8 @@ class GoalProgressBlock extends QuestlineBlock {
 			return;
 		}
 
-		const view = goalProgressView(
-			index,
-			goal,
-			this.plugin.getConfig(),
-			new Date(),
-		);
+		const config = this.plugin.getConfig();
+		const view = goalProgressView(index, goal, config, new Date());
 
 		if (view.empty) {
 			renderEmpty(containerEl, NO_GOAL_DATA);
@@ -150,6 +149,7 @@ class GoalProgressBlock extends QuestlineBlock {
 			containerEl,
 			view.counts.percent,
 			`Goal progress: ${view.name}`,
+			config.progressBarStyle,
 		);
 		renderStats(containerEl, [
 			`${view.counts.completed} / ${view.counts.total} tasks`,
@@ -170,12 +170,8 @@ class ProjectProgressBlock extends QuestlineBlock {
 			return;
 		}
 
-		const view = projectProgressView(
-			index,
-			project,
-			this.plugin.getConfig(),
-			new Date(),
-		);
+		const config = this.plugin.getConfig();
+		const view = projectProgressView(index, project, config, new Date());
 
 		if (view.empty) {
 			renderEmpty(containerEl, NO_PROJECT_TASKS);
@@ -184,6 +180,7 @@ class ProjectProgressBlock extends QuestlineBlock {
 				containerEl,
 				view.counts.percent,
 				`Project progress: ${view.name}`,
+				config.progressBarStyle,
 			);
 		}
 

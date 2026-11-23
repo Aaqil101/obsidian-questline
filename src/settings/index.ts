@@ -9,6 +9,7 @@ import {
 	type SettingDefinitionItem,
 } from 'obsidian';
 import type QuestlinePlugin from '../main';
+import { appearanceGroup } from './appearance';
 import { creationGroup } from './creation';
 import { notesGroup } from './notes';
 import { timeGroup } from './time';
@@ -28,7 +29,12 @@ export class QuestlineSettingTab
 	}
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
-		return [notesGroup(this), creationGroup(this), timeGroup(this)];
+		return [
+			notesGroup(this),
+			creationGroup(this),
+			timeGroup(this),
+			appearanceGroup(this),
+		];
 	}
 
 	/** Re-render the tab after a change that alters the definitions. */

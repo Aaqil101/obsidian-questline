@@ -46,6 +46,7 @@ describe('resolveConfig', () => {
 		expect(config.taskScope).toEqual({ type: 'all' });
 		expect(config.useTimekeep).toBe(true);
 		expect(config.openAfterCreate).toBe(true);
+		expect(config.progressBarStyle).toBe('rainbow');
 	});
 
 	it('normalizes custom tags and falls back when they are blank', () => {
@@ -138,6 +139,22 @@ describe('resolveConfig', () => {
 
 		expect(config.useTimekeep).toBe(false);
 		expect(config.openAfterCreate).toBe(true);
+	});
+
+	it('accepts the known progress bar styles and falls back otherwise', () => {
+		expect(resolveConfig({ progressBarStyle: 'normal' }).progressBarStyle).toBe(
+			'normal',
+		);
+		expect(
+			resolveConfig({ progressBarStyle: 'multicolor' }).progressBarStyle,
+		).toBe('multicolor');
+
+		const invalid = resolveConfig({
+			progressBarStyle:
+				'sparkles' as typeof DEFAULT_SETTINGS.progressBarStyle,
+		});
+
+		expect(invalid.progressBarStyle).toBe('rainbow');
 	});
 
 	it('normalizes template note paths', () => {

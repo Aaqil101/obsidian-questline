@@ -144,6 +144,14 @@ export class QuestlineIndexService {
 		return run.then(() => this.index);
 	}
 
+	/**
+	 * Re-emit the current index without reading the vault. Settings that
+	 * only affect rendering use this so open blocks repaint immediately.
+	 */
+	notifyRefresh(): void {
+		for (const listener of this.listeners) listener(this.index);
+	}
+
 	destroy(): void {
 		if (this.timer !== null) this.timers.clear(this.timer);
 		this.timer = null;

@@ -1,0 +1,39 @@
+import type { SettingDefinitionGroup } from 'obsidian';
+import type { ProgressBarStyle } from './types';
+import { renderRow, type SettingsHost } from './ui';
+
+/** Landing group: visual choices that do not affect the index. */
+export function appearanceGroup(host: SettingsHost): SettingDefinitionGroup {
+	const { plugin } = host;
+
+	return {
+		type: 'group',
+		heading: 'Appearance',
+		items: [
+			renderRow(
+				'Progress bar style',
+				'Rainbow is a full-spectrum gradient. Multi-color uses hard-edged color blocks. Accent color matches the theme.',
+				(setting) => {
+					setting.addDropdown((dropdown) =>
+						dropdown
+							.addOption('rainbow', 'Rainbow')
+							.addOption('multicolor', 'Multi-color')
+							.addOption('normal', 'Accent color')
+							.setValue(plugin.settings.progressBarStyle)
+							.onChange((value) => {
+								const progressBarStyle: ProgressBarStyle =
+									value === 'multicolor'
+										? 'multicolor'
+										: value === 'normal'
+											? 'normal'
+											: 'rainbow';
+								void plugin.updateSettings({
+									progressBarStyle,
+								});
+							}),
+					);
+				},
+			),
+		],
+	};
+}
