@@ -54,6 +54,7 @@ export class GoalModal extends Modal {
 		const inputs: GoalInputs = {};
 		let templateMode: GoalTemplateMode = 'custom';
 		let existingTemplateRow: Setting | null = null;
+		let includeProgress = true;
 
 		const titleSetting = new Setting(contentEl)
 			.setName('Title')
@@ -113,6 +114,15 @@ export class GoalModal extends Modal {
 			);
 
 		new Setting(contentEl)
+			.setName('Progress block')
+			.setDesc('Add a live goal-progress block to the new note.')
+			.addToggle((toggle) =>
+				toggle.setValue(true).onChange((value) => {
+					includeProgress = value;
+				}),
+			);
+
+		new Setting(contentEl)
 			.setName('Project template')
 			.setDesc(
 				'Create a custom template for this goal, pick an existing ' +
@@ -165,7 +175,9 @@ export class GoalModal extends Modal {
 				button
 					.setButtonText('Create goal')
 					.setCta()
-					.onClick(() => this.submit(inputs, templateMode)),
+					.onClick(() =>
+						this.submit(inputs, templateMode, includeProgress),
+					),
 			);
 
 		inputs.title?.inputEl.focus();
@@ -175,7 +187,11 @@ export class GoalModal extends Modal {
 		this.contentEl.empty();
 	}
 
-	private submit(inputs: GoalInputs, mode: GoalTemplateMode): void {
+	private submit(
+		inputs: GoalInputs,
+		mode: GoalTemplateMode,
+		includeProgress: boolean,
+	): void {
 		const draft: GoalDraft = {
 			title: inputs.title?.getValue() ?? '',
 			category: inputs.category?.getValue() ?? '',
@@ -184,6 +200,7 @@ export class GoalModal extends Modal {
 			folder: inputs.folder?.getValue() ?? '',
 			template: mode,
 			templatePath: '',
+			includeProgress,
 		};
 
 		const problem = validateGoal(draft);

@@ -24,6 +24,10 @@ const CONTROL = /\p{Cc}/gu;
 
 const MAX_COLLISIONS = 1000;
 
+/** The live goal progress block, ready to append to a goal body. */
+const GOAL_PROGRESS_BLOCK = '```goal-progress\n```';
+const GOAL_PROGRESS_MARKER = /^[ \t]*(?:```|~~~)\s*goal-progress\b/im;
+
 /** `{{goal_name}}` and one adjacent separator, for standalone projects. */
 const GOAL_NAME_BEFORE = /\s*[-–—|]\s*\{\{\s*goal_name\s*\}\}/gi;
 const GOAL_NAME_AFTER = /\{\{\s*goal_name\s*\}\}\s*[-–—|]\s*/gi;
@@ -43,6 +47,8 @@ export interface GoalDraft {
 	template: GoalTemplateMode;
 	/** Vault path of an existing template note, when `template` is `existing`. */
 	templatePath: string;
+	/** Append a live goal-progress block to the new goal body. */
+	includeProgress: boolean;
 }
 
 export interface ProjectGoalLink {
@@ -174,6 +180,19 @@ function noteName(
 	return sanitizeName(values.title) || fallback;
 }
 
+/**
+ * Append the live goal-progress block, unless the body already carries one.
+ * A body that deliberately renders empty still gets the block.
+ */
+export function withProgressBlock(body: string): string {
+	const trimmed = body.trim();
+	if (GOAL_PROGRESS_MARKER.test(trimmed)) return trimmed;
+
+	return trimmed
+		? `${trimmed}\n\n${GOAL_PROGRESS_BLOCK}`
+		: GOAL_PROGRESS_BLOCK;
+}
+
 /** Frontmatter for a template note: keep useful keys, replace the marker. */
 function templateFrontmatter(
 	frontmatter: Record<string, unknown> | null,
@@ -292,16 +311,23 @@ export function planGoal(
 		core.project_template = `[[${withoutExtension(templatePath)}]]`;
 	}
 
+	const composed = composeNote({
+		template: templates.goal,
+		fallback: BUILTIN_GOAL,
+		core,
+		values,
+		now,
+	});
+
 	return {
 		requestedPath,
 		path: allocatePath(folder, requestedName, isTaken),
-		note: composeNote({
-			template: templates.goal,
-			fallback: BUILTIN_GOAL,
-			core,
-			values,
-			now,
-		}),
+		note: {
+			frontmatter: composed.frontmatter,
+			body: draft.includeProgress
+				? withProgressBlock(composed.body)
+				: composed.body,
+		},
 		template,
 	};
 }

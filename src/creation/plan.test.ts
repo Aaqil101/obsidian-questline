@@ -8,6 +8,7 @@ import {
 	planGoal,
 	planProject,
 	sanitizeName,
+	withProgressBlock,
 	type PlanContext,
 	type ProjectDraft,
 } from './plan';
@@ -84,6 +85,7 @@ describe('planGoal', () => {
 				folder: 'goals',
 				template: 'custom',
 				templatePath: '',
+				includeProgress: true,
 			},
 			context(),
 			{ goal: null, project: null },
@@ -102,11 +104,31 @@ describe('planGoal', () => {
 			timespan: '6 Months',
 			project_template: '[[templates/Learn Python project template]]',
 		});
-		expect(plan.note.body).toBe(BUILTIN_GOAL.body.trim());
+		expect(plan.note.body).toBe(withProgressBlock(BUILTIN_GOAL.body).trim());
 		expect(plan.template?.parts.frontmatter).toEqual({
 			type: 'questline-template',
 		});
 		expect(plan.template?.parts.body).toContain('# {{title}}');
+	});
+
+	it('omits the progress block when the option is off', () => {
+		const plan = planGoal(
+			{
+				title: 'Learn Python',
+				category: 'Learning',
+				reason: 'Because',
+				timespan: '6 Months',
+				folder: 'goals',
+				template: 'global',
+				templatePath: '',
+				includeProgress: false,
+			},
+			context(),
+			{ goal: null, project: null },
+		);
+
+		expect(plan.note.body).toBe(BUILTIN_GOAL.body.trim());
+		expect(plan.note.body).not.toContain('goal-progress');
 	});
 
 	it('uses the global project template to seed a custom one', () => {
@@ -119,6 +141,7 @@ describe('planGoal', () => {
 				folder: 'goals',
 				template: 'custom',
 				templatePath: '',
+				includeProgress: true,
 			},
 			context(),
 			{
@@ -149,6 +172,7 @@ describe('planGoal', () => {
 				folder: 'goals',
 				template: 'global',
 				templatePath: '',
+				includeProgress: true,
 			},
 			context(),
 			{ goal: null, project: null },
@@ -169,6 +193,7 @@ describe('planGoal', () => {
 				folder: 'goals',
 				template: 'custom',
 				templatePath: '',
+				includeProgress: true,
 			},
 			context(['goals/2026-11-22 - Collision.md']),
 			{ goal: null, project: null },
@@ -190,6 +215,7 @@ describe('planGoal', () => {
 				folder: 'goals',
 				template: 'existing',
 				templatePath: 'templates/Shared project template.md',
+				includeProgress: true,
 			},
 			context(['templates/Shared project template.md']),
 			{ goal: null, project: null },
@@ -212,11 +238,30 @@ describe('planGoal', () => {
 					folder: 'goals',
 					template: 'existing',
 					templatePath: '',
+					includeProgress: true,
 				},
 				context(),
 				{ goal: null, project: null },
 			),
 		).toThrow('Choose an existing template note first.');
+	});
+});
+
+describe('withProgressBlock', () => {
+	it('appends the block after the body', () => {
+		expect(withProgressBlock('# Goal')).toBe(
+			'# Goal\n\n```goal-progress\n```',
+		);
+	});
+
+	it('does not duplicate a block already in the template', () => {
+		const body = '# Goal\n\n```goal-progress\n```';
+
+		expect(withProgressBlock(body)).toBe(body);
+	});
+
+	it('uses the block as the whole body when the body is empty', () => {
+		expect(withProgressBlock('  \n')).toBe('```goal-progress\n```');
 	});
 });
 
