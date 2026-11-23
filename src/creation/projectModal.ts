@@ -16,7 +16,11 @@ import {
 	NotePickModal,
 } from '../settings/folderPicker';
 import type { QuestlineConfig } from '../settings/types';
-import type { ProjectDraft, ProjectGoalLink } from './plan';
+import {
+	withoutDate,
+	type ProjectDraft,
+	type ProjectGoalLink,
+} from './plan';
 import {
 	announceMissingTemplate,
 	defaultProjectTemplatePath,
@@ -37,14 +41,16 @@ interface ProjectInputs {
 	folder?: TextComponent;
 }
 
-/** A goal is listed by its alias and name, so either one finds it. */
+/** A goal is listed by its alias and title, so either one finds it. */
 function goalLabel(goal: GoalNode): string {
 	const alias = goal.aliases[0]?.trim();
-	if (alias && alias.toLowerCase() !== goal.name.toLowerCase()) {
-		return `${alias} (${goal.name})`;
+	const title = withoutDate(goal.name);
+
+	if (alias && alias.toLowerCase() !== title.toLowerCase()) {
+		return `${alias} (${title})`;
 	}
 
-	return goal.name;
+	return alias || title;
 }
 
 class GoalPickModal extends FuzzySuggestModal<GoalChoice> {
@@ -243,7 +249,7 @@ export class ProjectModal extends Modal {
 			? {
 					path: goal.path,
 					name: goal.name,
-					display: goal.aliases[0] ?? goal.name,
+					display: goal.aliases[0],
 				}
 			: null;
 

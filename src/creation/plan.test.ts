@@ -243,7 +243,7 @@ describe('planProject', () => {
 			},
 		);
 
-		expect(plan.path).toBe('projects/Learn Python - Ship the site.md');
+		expect(plan.path).toBe('projects/Python - Ship the site.md');
 		expect(plan.note.frontmatter).toMatchObject({
 			tags: ['project'],
 			created: '2026-11-22',
@@ -270,6 +270,25 @@ describe('planProject', () => {
 		expect(plan.note.frontmatter.goal).toBeUndefined();
 		expect(plan.note.frontmatter.author).toBeUndefined();
 	});
+
+	it('drops the goal date when the goal has no alias', () => {
+		const plan = planProject(
+			projectDraft({
+				title: 'ts',
+				goal: {
+					path: 'goals/2026-11-23 - Goal B.md',
+					name: '2026-11-23 - Goal B',
+				},
+			}),
+			context(),
+			{ template: null },
+		);
+
+		expect(plan.path).toBe('projects/Goal B - ts.md');
+		expect(plan.note.frontmatter.goal).toBe(
+			'[[goals/2026-11-23 - Goal B|Goal B]]',
+		);
+	});
 });
 
 describe('noteLink', () => {
@@ -284,5 +303,14 @@ describe('noteLink', () => {
 		expect(noteLink({ path: 'goals/Learn.md', name: 'Learn' })).toBe(
 			'[[goals/Learn|Learn]]',
 		);
+	});
+
+	it('drops a leading date from the display text', () => {
+		expect(
+			noteLink({
+				path: 'goals/2026-11-23 - Goal B.md',
+				name: '2026-11-23 - Goal B',
+			}),
+		).toBe('[[goals/2026-11-23 - Goal B|Goal B]]');
 	});
 });

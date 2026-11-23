@@ -29,6 +29,9 @@ const GOAL_NAME_BEFORE = /\s*[-–—|]\s*\{\{\s*goal_name\s*\}\}/gi;
 const GOAL_NAME_AFTER = /\{\{\s*goal_name\s*\}\}\s*[-–—|]\s*/gi;
 const GOAL_NAME_TOKEN = /\{\{\s*goal_name\s*\}\}/gi;
 
+/** A leading date from the default goal filename pattern. */
+const DATE_PREFIX = /^\d{4}-\d{2}-\d{2}\s*[-–—:|]\s*/;
+
 export type GoalTemplateMode = 'custom' | 'existing' | 'global';
 
 export interface GoalDraft {
@@ -213,10 +216,23 @@ export function planProjectTemplate(
 	};
 }
 
+/** A goal name without the date the goal filename pattern adds. */
+export function withoutDate(name: string): string {
+	return name.replace(DATE_PREFIX, '').trim() || name;
+}
+
+/**
+ * The goal name used in a project filename and link: its alias when one is
+ * set, otherwise the note name with a leading date removed.
+ */
+export function goalDisplayName(goal: ProjectGoalLink): string {
+	return goal.display?.trim() || withoutDate(goal.name);
+}
+
 /** A link to a note, using the goal name or alias as its display text. */
 export function noteLink(goal: ProjectGoalLink): string {
 	const target = withoutExtension(goal.path);
-	const display = (goal.display || goal.name).trim();
+	const display = goalDisplayName(goal);
 
 	return display && display !== target
 		? `[[${target}|${display}]]`
@@ -310,7 +326,7 @@ export function planProject(
 	const values: TemplateValues = {
 		title,
 		goal: goalLink,
-		goalName: draft.goal?.name ?? null,
+		goalName: draft.goal ? goalDisplayName(draft.goal) : null,
 		author,
 		subtitle,
 		status,
