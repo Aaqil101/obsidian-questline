@@ -121,13 +121,14 @@ export class ProjectModal extends Modal {
 			}).open();
 		};
 
-		new Setting(contentEl)
+		const titleSetting = new Setting(contentEl)
 			.setName('Title')
 			.setDesc('The project name, used for the note and its filename.')
 			.addText((text) => {
 				inputs.title = text;
 				text.setPlaceholder('What are you working on?');
 			});
+		titleSetting.settingEl.addClass('questline-title-setting');
 
 		new Setting(contentEl)
 			.setName('Goal')

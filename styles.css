@@ -48,6 +48,30 @@
 	max-width: min(720px, calc(100vw - 32px));
 }
 
+/* The title placeholder is longer than the default control; give the input
+   most of the row so the whole placeholder is visible. */
+.questline-modal .questline-title-setting .setting-item-control {
+	flex: 1 1 56%;
+	max-width: 56%;
+}
+
+.questline-modal .questline-title-setting input[type='text'] {
+	width: 100%;
+}
+
+@media (max-width: 600px) {
+	.questline-modal .questline-title-setting {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.questline-modal .questline-title-setting .setting-item-control {
+		flex: 1 1 auto;
+		max-width: none;
+		width: 100%;
+	}
+}
+
 /*
  * Progress blocks. A block reads only the cached index, so repainting is
  * cheap; the transition keeps a checkbox change from jumping.

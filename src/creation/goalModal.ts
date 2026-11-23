@@ -54,13 +54,14 @@ export class GoalModal extends Modal {
 		let templateMode: GoalTemplateMode = 'custom';
 		let existingTemplateRow: Setting | null = null;
 
-		new Setting(contentEl)
+		const titleSetting = new Setting(contentEl)
 			.setName('Title')
 			.setDesc('The goal name, used for the note and its filename.')
 			.addText((text) => {
 				inputs.title = text;
 				text.setPlaceholder('What do you want to achieve?');
 			});
+		titleSetting.settingEl.addClass('questline-title-setting');
 
 		new Setting(contentEl)
 			.setName('Category')
