@@ -244,6 +244,7 @@ export function planGoal(
 	const core: Record<string, unknown> = {
 		tags: [config.goalTag],
 		created: formatDate(now, 'YYYY-MM-DD'),
+		aliases: [sanitizeName(title) || 'Untitled goal'],
 	};
 	if (category) core.category = category;
 	if (reason) core.reason = reason;

@@ -96,6 +96,7 @@ describe('planGoal', () => {
 		expect(plan.note.frontmatter).toMatchObject({
 			tags: ['goal'],
 			created: '2026-11-22',
+			aliases: ['Learn Python'],
 			category: 'Learning',
 			reason: 'Automate the boring parts',
 			timespan: '6 Months',
@@ -154,6 +155,7 @@ describe('planGoal', () => {
 		);
 
 		expect(plan.template).toBeNull();
+		expect(plan.note.frontmatter.aliases).toEqual(['Learn Python']);
 		expect(plan.note.frontmatter.project_template).toBeUndefined();
 	});
 
