@@ -7,7 +7,7 @@ import {
 	type TextAreaComponent,
 	type TextComponent,
 } from 'obsidian';
-import { attachFolderSuggest } from '../settings/folderPicker';
+import { attachFolderSuggest, FolderPickModal } from '../settings/folderPicker';
 import type { QuestlineConfig } from '../settings/types';
 import type { GoalDraft, GoalTemplateMode } from './plan';
 import { ValueSuggest } from './suggest';
@@ -33,6 +33,7 @@ export class GoalModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 		this.setTitle('New goal');
+		this.modalEl.addClass('questline-modal');
 
 		const inputs: {
 			title?: TextComponent;
@@ -70,7 +71,7 @@ export class GoalModal extends Modal {
 			.addTextArea((text) => {
 				inputs.reason = text;
 				text.setPlaceholder('What this goal changes');
-				text.inputEl.rows = 3;
+				text.inputEl.rows = 4;
 			});
 
 		new Setting(contentEl)
@@ -89,7 +90,14 @@ export class GoalModal extends Modal {
 				inputs.folder = text;
 				text.setPlaceholder('Goals').setValue(this.config.goalFolder);
 				attachFolderSuggest(this.app, text.inputEl);
-			});
+			})
+			.addButton((button) =>
+				button.setButtonText('Browse').onClick(() => {
+					new FolderPickModal(this.app, (path) => {
+						inputs.folder?.setValue(path);
+					}).open();
+				}),
+			);
 
 		new Setting(contentEl)
 			.setName('Project template')

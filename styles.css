@@ -39,6 +39,16 @@
 }
 
 /*
+ * Creation modals get a little more room than the default, because the
+ * fields sit in two columns and the folder and template pickers need space.
+ */
+
+.modal.questline-modal {
+	width: min(720px, calc(100vw - 32px));
+	max-width: min(720px, calc(100vw - 32px));
+}
+
+/*
  * Progress blocks. A block reads only the cached index, so repainting is
  * cheap; the transition keeps a checkbox change from jumping.
  */

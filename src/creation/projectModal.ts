@@ -12,6 +12,8 @@ import type { GoalNode } from '../index/types';
 import {
 	attachFolderSuggest,
 	attachNoteSuggest,
+	FolderPickModal,
+	NotePickModal,
 } from '../settings/folderPicker';
 import type { QuestlineConfig } from '../settings/types';
 import type { ProjectDraft, ProjectGoalLink } from './plan';
@@ -87,6 +89,7 @@ export class ProjectModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 		this.setTitle('New project');
+		this.modalEl.addClass('questline-modal');
 
 		const inputs: ProjectInputs = {};
 		let selectedGoal: GoalNode | null = null;
@@ -174,7 +177,14 @@ export class ProjectModal extends Modal {
 				text.setPlaceholder('Built-in project template');
 				text.setValue(templateDefault);
 				attachNoteSuggest(this.app, text.inputEl);
-			});
+			})
+			.addButton((button) =>
+				button.setButtonText('Browse').onClick(() => {
+					new NotePickModal(this.app, (path) => {
+						inputs.template?.setValue(path);
+					}).open();
+				}),
+			);
 
 		new Setting(contentEl)
 			.setName('Folder')
@@ -183,7 +193,14 @@ export class ProjectModal extends Modal {
 				inputs.folder = text;
 				text.setPlaceholder('Projects').setValue(this.config.projectFolder);
 				attachFolderSuggest(this.app, text.inputEl);
-			});
+			})
+			.addButton((button) =>
+				button.setButtonText('Browse').onClick(() => {
+					new FolderPickModal(this.app, (path) => {
+						inputs.folder?.setValue(path);
+					}).open();
+				}),
+			);
 
 		new Setting(contentEl)
 			.addButton((button) =>
