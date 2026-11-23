@@ -37,7 +37,7 @@ interface ParsedTimespan {
 	amount: number | null;
 }
 
-const INFINITE = /^(?:♾️?|∞)\s*infinite$/i;
+const INFINITE = /^(?:(?:♾️?|∞)\s*)?infinite$/i;
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})(?:$|[T\s])/;
 const SHORTHAND =
 	/^(\d+)\s*(y|yr|yrs|year|years|m|mo|mos|month|months|w|wk|wks|week|weeks|d|day|days)$/i;

@@ -17,6 +17,7 @@ import {
 	isTemplateNote,
 	pickTemplate,
 } from './templatePicker';
+import { validateGoal, type GoalField } from './validate';
 
 const TIMESPAN_SUGGESTIONS = [
 	'1 Month',
@@ -56,7 +57,7 @@ export class GoalModal extends Modal {
 
 		const titleSetting = new Setting(contentEl)
 			.setName('Title')
-			.setDesc('The goal name, used for the note and its filename.')
+			.setDesc('Required. The goal name, used for the note and its filename.')
 			.addText((text) => {
 				inputs.title = text;
 				text.setPlaceholder('What do you want to achieve?');
@@ -65,7 +66,7 @@ export class GoalModal extends Modal {
 
 		new Setting(contentEl)
 			.setName('Category')
-			.setDesc('Optional. Suggestions come from the goal categories.')
+			.setDesc('Required. Suggestions come from the goal categories.')
 			.addText((text) => {
 				inputs.category = text;
 				text.setPlaceholder('Learning');
@@ -78,7 +79,7 @@ export class GoalModal extends Modal {
 
 		const reasonSetting = new Setting(contentEl)
 			.setName('Reason')
-			.setDesc('Optional. Why does this goal matter?')
+			.setDesc('Required. Why does this goal matter?')
 			.addTextArea((text) => {
 				inputs.reason = text;
 				text.setPlaceholder('What this goal changes');
@@ -88,7 +89,7 @@ export class GoalModal extends Modal {
 
 		new Setting(contentEl)
 			.setName('Timespan')
-			.setDesc('Optional. A due date is measured from today.')
+			.setDesc('Required. A due date is measured from today.')
 			.addText((text) => {
 				inputs.timespan = text;
 				text.setPlaceholder('6 Months');
@@ -175,30 +176,46 @@ export class GoalModal extends Modal {
 	}
 
 	private submit(inputs: GoalInputs, mode: GoalTemplateMode): void {
-		const title = inputs.title?.getValue() ?? '';
-		if (!title.trim()) {
-			new Notice('Give the goal a title first.');
-			inputs.title?.inputEl.focus();
-
-			return;
-		}
-
-		let templatePath = '';
-		if (mode === 'existing') {
-			templatePath = this.checkExistingTemplate(inputs);
-			if (!templatePath) return;
-		}
-
-		this.close();
-		this.onCreate({
-			title,
+		const draft: GoalDraft = {
+			title: inputs.title?.getValue() ?? '',
 			category: inputs.category?.getValue() ?? '',
 			reason: inputs.reason?.getValue() ?? '',
 			timespan: inputs.timespan?.getValue() ?? '',
 			folder: inputs.folder?.getValue() ?? '',
 			template: mode,
-			templatePath,
-		});
+			templatePath: '',
+		};
+
+		const problem = validateGoal(draft);
+		if (problem) {
+			new Notice(problem.message);
+			this.focus(problem.field, inputs);
+
+			return;
+		}
+
+		if (mode === 'existing') {
+			const templatePath = this.checkExistingTemplate(inputs);
+			if (!templatePath) return;
+
+			draft.templatePath = templatePath;
+		}
+
+		this.close();
+		this.onCreate(draft);
+	}
+
+	private focus(field: GoalField, inputs: GoalInputs): void {
+		const input =
+			field === 'title'
+				? inputs.title
+				: field === 'category'
+					? inputs.category
+					: field === 'reason'
+						? inputs.reason
+						: inputs.timespan;
+
+		input?.inputEl.focus();
 	}
 
 	/** Validate the picked template and return its canonical vault path. */

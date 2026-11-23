@@ -31,6 +31,11 @@ describe('parseTimespan', () => {
 			remainingDays: null,
 			overdue: false,
 		});
+		expect(parseTimespan('Infinite', { created, now })).toMatchObject({
+			valid: true,
+			infinite: true,
+			dueDate: null,
+		});
 	});
 
 	it('parses the shorthand forms', () => {
