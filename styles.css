@@ -59,13 +59,27 @@
 	width: 100%;
 }
 
+/* The reason needs room to write more than a sentence. */
+.questline-modal .questline-reason-setting .setting-item-control {
+	flex: 1 1 64%;
+	max-width: 64%;
+}
+
+.questline-modal .questline-reason-setting textarea {
+	width: 100%;
+	min-height: 200px;
+	resize: vertical;
+}
+
 @media (max-width: 600px) {
-	.questline-modal .questline-title-setting {
+	.questline-modal .questline-title-setting,
+	.questline-modal .questline-reason-setting {
 		flex-direction: column;
 		align-items: stretch;
 	}
 
-	.questline-modal .questline-title-setting .setting-item-control {
+	.questline-modal .questline-title-setting .setting-item-control,
+	.questline-modal .questline-reason-setting .setting-item-control {
 		flex: 1 1 auto;
 		max-width: none;
 		width: 100%;

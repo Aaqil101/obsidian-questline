@@ -76,14 +76,15 @@ export class GoalModal extends Modal {
 				);
 			});
 
-		new Setting(contentEl)
+		const reasonSetting = new Setting(contentEl)
 			.setName('Reason')
 			.setDesc('Optional. Why does this goal matter?')
 			.addTextArea((text) => {
 				inputs.reason = text;
 				text.setPlaceholder('What this goal changes');
-				text.inputEl.rows = 4;
+				text.inputEl.rows = 9;
 			});
+		reasonSetting.settingEl.addClass('questline-reason-setting');
 
 		new Setting(contentEl)
 			.setName('Timespan')
