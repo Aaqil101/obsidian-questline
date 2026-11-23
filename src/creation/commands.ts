@@ -3,6 +3,7 @@ import { Notice } from 'obsidian';
 import type QuestlinePlugin from '../main';
 import { readTemplate } from '../templates/notes';
 import { GoalModal } from './goalModal';
+import { confirmCollision } from './confirmModal';
 import { openNote, vaultPathExists, writeCreation } from './notes';
 import {
 	planGoal,
@@ -74,6 +75,18 @@ async function createGoal(
 			},
 			{ goal: goalTemplate, project: projectTemplate },
 		);
+
+		if (
+			plan.path !== plan.requestedPath &&
+			vaultPathExists(app, plan.requestedPath)
+		) {
+			const confirmed = await confirmCollision(
+				app,
+				plan.requestedPath,
+				plan.path,
+			);
+			if (!confirmed) return;
+		}
 
 		const file = await writeCreation(app, plan);
 		new Notice(`Created the goal ${file.basename}.`);
