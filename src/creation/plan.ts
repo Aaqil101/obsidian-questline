@@ -24,6 +24,11 @@ const CONTROL = /\p{Cc}/gu;
 
 const MAX_COLLISIONS = 1000;
 
+/** `{{goal_name}}` and one adjacent separator, for standalone projects. */
+const GOAL_NAME_BEFORE = /\s*[-–—|]\s*\{\{\s*goal_name\s*\}\}/gi;
+const GOAL_NAME_AFTER = /\{\{\s*goal_name\s*\}\}\s*[-–—|]\s*/gi;
+const GOAL_NAME_TOKEN = /\{\{\s*goal_name\s*\}\}/gi;
+
 export type GoalTemplateMode = 'custom' | 'existing' | 'global';
 
 export interface GoalDraft {
@@ -136,13 +141,31 @@ export function allocatePath(
 	throw new Error(`Could not find a free filename for ${base}.`);
 }
 
+/**
+ * A pattern with an empty `{{goal_name}}` token removed, including the
+ * separator around it, so a standalone project is not named `- Ship it`.
+ */
+function patternForValues(
+	pattern: string,
+	values: TemplateValues,
+): string {
+	if (values.goalName?.trim()) return pattern;
+
+	return pattern
+		.replace(GOAL_NAME_BEFORE, '')
+		.replace(GOAL_NAME_AFTER, '')
+		.replace(GOAL_NAME_TOKEN, '');
+}
+
 function noteName(
 	pattern: string,
 	values: TemplateValues,
 	now: Date,
 	fallback: string,
 ): string {
-	const rendered = sanitizeName(renderFilename(pattern, values, now));
+	const rendered = sanitizeName(
+		renderFilename(patternForValues(pattern, values), values, now),
+	);
 	if (rendered) return rendered;
 
 	return sanitizeName(values.title) || fallback;
@@ -297,6 +320,7 @@ export function planProject(
 		tags: [config.projectTag],
 		created: formatDate(now, 'YYYY-MM-DD'),
 		status,
+		aliases: [sanitizeName(title) || 'Untitled project'],
 	};
 	if (author) core.author = author;
 	if (subtitle) core.subtitle = subtitle;

@@ -1,5 +1,10 @@
 import { Setting, type SettingDefinitionGroup } from 'obsidian';
-import { DEFAULT_FILENAME_PATTERN, type ProgressMode, type TaskScopeMode } from './types';
+import {
+	DEFAULT_GOAL_FILENAME,
+	DEFAULT_PROJECT_FILENAME,
+	type ProgressMode,
+	type TaskScopeMode,
+} from './types';
 import {
 	group,
 	noteParagraph,
@@ -8,7 +13,7 @@ import {
 } from './ui';
 
 const FILENAME_TOKENS =
-	'Tokens: {{title}}, {{date}}, {{date:FORMAT}}, {{time}}, {{time:FORMAT}}, {{created}}.';
+	'Tokens: {{title}}, {{goal_name}}, {{date}}, {{date:FORMAT}}, {{time}}, {{time:FORMAT}}, {{created}}.';
 
 /** Landing group: the two creation sub-pages. */
 export function creationGroup(host: SettingsHost): SettingDefinitionGroup {
@@ -55,10 +60,10 @@ function renderDefaultsPage(
 
 	new Setting(card)
 		.setName('Goal filename pattern')
-		.setDesc(`${FILENAME_TOKENS} Default: ${DEFAULT_FILENAME_PATTERN}`)
+		.setDesc(`${FILENAME_TOKENS} Default: ${DEFAULT_GOAL_FILENAME}`)
 		.addText((text) =>
 			text
-				.setPlaceholder(DEFAULT_FILENAME_PATTERN)
+				.setPlaceholder(DEFAULT_GOAL_FILENAME)
 				.setValue(settings.goalFilename)
 				.onChange((value) => {
 					void plugin.updateSettings({ goalFilename: value });
@@ -67,10 +72,13 @@ function renderDefaultsPage(
 
 	new Setting(card)
 		.setName('Project filename pattern')
-		.setDesc(`${FILENAME_TOKENS} Default: ${DEFAULT_FILENAME_PATTERN}`)
+		.setDesc(
+			`${FILENAME_TOKENS} Default: ${DEFAULT_PROJECT_FILENAME}. ` +
+				'{{goal_name}} is dropped when a project has no goal.',
+		)
 		.addText((text) =>
 			text
-				.setPlaceholder(DEFAULT_FILENAME_PATTERN)
+				.setPlaceholder(DEFAULT_PROJECT_FILENAME)
 				.setValue(settings.projectFilename)
 				.onChange((value) => {
 					void plugin.updateSettings({ projectFilename: value });

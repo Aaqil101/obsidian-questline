@@ -46,7 +46,10 @@ export const DEFAULT_PROJECT_STATUSES = [
 ];
 
 /** Goal notes are dated by default so they sort chronologically. */
-export const DEFAULT_FILENAME_PATTERN = '{{date:YYYY-MM-DD}} - {{title}}';
+export const DEFAULT_GOAL_FILENAME = '{{date:YYYY-MM-DD}} - {{title}}';
+
+/** Projects lead with their goal, so the goal is visible in the filename. */
+export const DEFAULT_PROJECT_FILENAME = '{{goal_name}} - {{title}}';
 
 export const DEFAULT_GOAL_FOLDER = 'goals';
 export const DEFAULT_PROJECT_FOLDER = 'projects';
@@ -63,8 +66,8 @@ export const DEFAULT_SETTINGS: QuestlineSettings = {
 	goalCategories: [...DEFAULT_GOAL_CATEGORIES],
 	projectStatuses: [...DEFAULT_PROJECT_STATUSES],
 	defaultAuthor: '',
-	goalFilename: DEFAULT_FILENAME_PATTERN,
-	projectFilename: DEFAULT_FILENAME_PATTERN,
+	goalFilename: DEFAULT_GOAL_FILENAME,
+	projectFilename: DEFAULT_PROJECT_FILENAME,
 	progressMode: 'auto',
 	taskScopeMode: 'all',
 	taskScopeHeading: 'Tasks',
@@ -238,10 +241,10 @@ export function resolveConfig(
 			DEFAULT_PROJECT_STATUSES,
 		),
 		defaultAuthor: cleanText(stored.defaultAuthor, ''),
-		goalFilename: cleanText(stored.goalFilename, DEFAULT_FILENAME_PATTERN),
+		goalFilename: cleanText(stored.goalFilename, DEFAULT_GOAL_FILENAME),
 		projectFilename: cleanText(
 			stored.projectFilename,
-			DEFAULT_FILENAME_PATTERN,
+			DEFAULT_PROJECT_FILENAME,
 		),
 		progressMode: cleanProgressMode(stored.progressMode),
 		taskScope: cleanTaskScope(stored.taskScopeMode, stored.taskScopeHeading),

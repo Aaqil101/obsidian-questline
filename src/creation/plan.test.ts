@@ -243,7 +243,7 @@ describe('planProject', () => {
 			},
 		);
 
-		expect(plan.path).toBe('projects/2026-11-22 - Ship the site.md');
+		expect(plan.path).toBe('projects/Learn Python - Ship the site.md');
 		expect(plan.note.frontmatter).toMatchObject({
 			tags: ['project'],
 			created: '2026-11-22',
@@ -251,7 +251,7 @@ describe('planProject', () => {
 			author: 'Aaqil',
 			subtitle: 'Ship it',
 			goal: '[[goals/Learn Python|Python]]',
-			aliases: ['Ship: the site'],
+			aliases: ['Ship the site'],
 		});
 		expect(plan.note.body).toBe(
 			'# Ship: the site\n\nGoal: [[goals/Learn Python|Python]]\nOwner: Aaqil',
@@ -261,9 +261,11 @@ describe('planProject', () => {
 	it('keeps a standalone project unassigned and defaults the status', () => {
 		const plan = planProject(projectDraft(), context(), { template: null });
 
+		expect(plan.path).toBe('projects/Ship the site.md');
 		expect(plan.note.frontmatter).toMatchObject({
 			tags: ['project'],
 			status: 'Todo',
+			aliases: ['Ship the site'],
 		});
 		expect(plan.note.frontmatter.goal).toBeUndefined();
 		expect(plan.note.frontmatter.author).toBeUndefined();
