@@ -21,7 +21,11 @@ import {
 	setFrontmatterKey,
 } from './frontmatter';
 import { openNote, vaultPathExists } from './notes';
-import { planProjectTemplate, withoutExtension } from './plan';
+import {
+	goalDisplayName,
+	planProjectTemplate,
+	withoutExtension,
+} from './plan';
 import { announceMissingTemplate, goalTemplatePath } from './templates';
 
 function activeGoal(plugin: QuestlinePlugin): GoalNode | null {
@@ -68,7 +72,11 @@ async function createTemplateForGoal(
 		? await readTemplate(app, config.projectTemplate)
 		: null;
 	const plan = planProjectTemplate(
-		goal.name,
+		goalDisplayName({
+			path: goal.path,
+			name: goal.name,
+			display: goal.aliases[0],
+		}),
 		{
 			config,
 			now: new Date(),

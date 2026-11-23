@@ -65,6 +65,6 @@ export async function readChosenProjectTemplate(
 /** Warn that a linked or typed template is gone and what happens instead. */
 export function announceMissingTemplate(target: string): void {
 	new Notice(
-		`The template "${target}" is missing. Questline used the global project template instead.`,
+		`The template "${target}" is missing. Questline used the global or built-in project template instead.`,
 	);
 }
