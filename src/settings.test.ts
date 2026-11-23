@@ -148,6 +148,9 @@ describe('resolveConfig', () => {
 		expect(
 			resolveConfig({ progressBarStyle: 'multicolor' }).progressBarStyle,
 		).toBe('multicolor');
+		expect(
+			resolveConfig({ progressBarStyle: 'threshold' }).progressBarStyle,
+		).toBe('threshold');
 
 		const invalid = resolveConfig({
 			progressBarStyle:

@@ -12,21 +12,24 @@ export function appearanceGroup(host: SettingsHost): SettingDefinitionGroup {
 		items: [
 			renderRow(
 				'Progress bar style',
-				'Rainbow is a full-spectrum gradient. Multi-color uses hard-edged color blocks. Accent color matches the theme.',
+				'Rainbow is a full-spectrum gradient. Multi-color uses hard-edged color blocks. Threshold changes color at 25%, 50%, and 75%. Accent color matches the theme.',
 				(setting) => {
 					setting.addDropdown((dropdown) =>
 						dropdown
 							.addOption('rainbow', 'Rainbow')
 							.addOption('multicolor', 'Multi-color')
+							.addOption('threshold', 'Threshold')
 							.addOption('normal', 'Accent color')
 							.setValue(plugin.settings.progressBarStyle)
 							.onChange((value) => {
 								const progressBarStyle: ProgressBarStyle =
 									value === 'multicolor'
 										? 'multicolor'
-										: value === 'normal'
-											? 'normal'
-											: 'rainbow';
+										: value === 'threshold'
+											? 'threshold'
+											: value === 'normal'
+												? 'normal'
+												: 'rainbow';
 								void plugin.updateSettings({
 									progressBarStyle,
 								});

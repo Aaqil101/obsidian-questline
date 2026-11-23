@@ -5,7 +5,11 @@ import { ALL_TASKS, type TaskScope } from '../progress/tasks';
 export type ProgressMode = 'auto' | 'tasks' | 'manual';
 
 /** How the progress bar fill is painted. */
-export type ProgressBarStyle = 'rainbow' | 'multicolor' | 'normal';
+export type ProgressBarStyle =
+	| 'rainbow'
+	| 'multicolor'
+	| 'normal'
+	| 'threshold';
 
 /** Whether progress counts every task or only the tasks under one heading. */
 export type TaskScopeMode = 'all' | 'heading';
@@ -181,7 +185,10 @@ function cleanProgressMode(value: unknown): ProgressMode {
 }
 
 function cleanProgressBarStyle(value: unknown): ProgressBarStyle {
-	return value === 'multicolor' || value === 'normal' || value === 'rainbow'
+	return value === 'multicolor' ||
+		value === 'normal' ||
+		value === 'rainbow' ||
+		value === 'threshold'
 		? value
 		: DEFAULT_SETTINGS.progressBarStyle;
 }

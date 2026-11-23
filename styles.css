@@ -113,7 +113,9 @@
 	height: 100%;
 	border-radius: inherit;
 	background-color: var(--interactive-accent);
-	transition: width 150ms ease;
+	transition:
+		width 150ms ease,
+		background-color 150ms ease;
 }
 
 .questline-progress-fill--rainbow {
@@ -141,6 +143,22 @@
 
 .questline-progress-fill--normal {
 	background-image: none;
+}
+
+.questline-progress-fill--threshold-0 {
+	background-color: #e74c3c;
+}
+
+.questline-progress-fill--threshold-1 {
+	background-color: #e67e22;
+}
+
+.questline-progress-fill--threshold-2 {
+	background-color: #3498db;
+}
+
+.questline-progress-fill--threshold-3 {
+	background-color: #2ecc71;
 }
 
 .questline-percent {

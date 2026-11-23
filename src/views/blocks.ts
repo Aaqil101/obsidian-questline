@@ -6,6 +6,7 @@
 import { MarkdownRenderChild } from 'obsidian';
 import type QuestlinePlugin from '../main';
 import type { ProgressBarStyle } from '../settings/types';
+import { thresholdStage } from './bar';
 import {
 	describeDue,
 	formatHours,
@@ -82,7 +83,13 @@ function renderProgressRow(
 		},
 	});
 	const fill = bar.createDiv({ cls: 'questline-progress-fill' });
-	fill.addClass(`questline-progress-fill--${style}`);
+	if (style === 'threshold') {
+		fill.addClass(
+			`questline-progress-fill--threshold-${thresholdStage(percent)}`,
+		);
+	} else {
+		fill.addClass(`questline-progress-fill--${style}`);
+	}
 	fill.setCssStyles({ width: `${Math.max(0, Math.min(100, percent))}%` });
 
 	row.createSpan({ cls: 'questline-percent', text: `${percent}%` });
