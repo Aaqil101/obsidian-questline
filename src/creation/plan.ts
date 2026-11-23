@@ -4,6 +4,7 @@
  * turns the result into files; tests can inspect it without a vault.
  */
 import { TEMPLATE_TYPE } from '../constants';
+import { withoutDate } from '../index/names';
 import type { QuestlineConfig } from '../settings/types';
 import { normalizeFolder } from '../settings/types';
 import { BUILTIN_GOAL, BUILTIN_PROJECT } from '../templates/builtin';
@@ -32,9 +33,6 @@ const GOAL_PROGRESS_MARKER = /^[ \t]*(?:```|~~~)\s*goal-progress\b/im;
 const GOAL_NAME_BEFORE = /\s*[-–—|]\s*\{\{\s*goal_name\s*\}\}/gi;
 const GOAL_NAME_AFTER = /\{\{\s*goal_name\s*\}\}\s*[-–—|]\s*/gi;
 const GOAL_NAME_TOKEN = /\{\{\s*goal_name\s*\}\}/gi;
-
-/** A leading date from the default goal filename pattern. */
-const DATE_PREFIX = /^\d{4}-\d{2}-\d{2}\s*[-–—:|]\s*/;
 
 export type GoalTemplateMode = 'custom' | 'existing' | 'global';
 
@@ -236,14 +234,6 @@ export function planProjectTemplate(
 }
 
 /** A goal name without the date the goal filename pattern adds. */
-export function withoutDate(name: string): string {
-	return name.replace(DATE_PREFIX, '').trim() || name;
-}
-
-/**
- * The goal name used in a project filename and link: its alias when one is
- * set, otherwise the note name with a leading date removed.
- */
 export function goalDisplayName(goal: ProjectGoalLink): string {
 	return goal.display?.trim() || withoutDate(goal.name);
 }

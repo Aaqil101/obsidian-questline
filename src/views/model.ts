@@ -2,6 +2,7 @@
  * View models for the progress blocks. They are built from the cached index
  * only, so rendering never reads the vault or rescans notes.
  */
+import { goalTitle } from '../index/names';
 import type { GoalNode, ProjectNode, QuestlineIndex } from '../index/types';
 import { computeGoalProgress, computeProjectProgress } from '../progress/progress';
 import type { TaskProgress, TaskSource } from '../progress/tasks';
@@ -141,7 +142,7 @@ export function goalProgressView(
 				);
 
 	return {
-		name: goal.name,
+		name: goalTitle(goal.name, goal.aliases),
 		counts,
 		projectCount: projects.length,
 		due: goalDueInfo(goal.fields.timespan, goal.fields.created, now),
@@ -180,7 +181,9 @@ export function projectProgressView(
 		name: project.name,
 		counts,
 		status: project.fields.status,
-		goal: goal ? { path: goal.path, name: goal.name } : null,
+		goal: goal
+			? { path: goal.path, name: goalTitle(goal.name, goal.aliases) }
+			: null,
 		workHours:
 			config.useTimekeep && note
 				? sumWorkHours(note.body, { now }).hours

@@ -15,12 +15,9 @@ import {
 	FolderPickModal,
 	NotePickModal,
 } from '../settings/folderPicker';
+import { withoutDate } from '../index/names';
 import type { QuestlineConfig } from '../settings/types';
-import {
-	withoutDate,
-	type ProjectDraft,
-	type ProjectGoalLink,
-} from './plan';
+import type { ProjectDraft, ProjectGoalLink } from './plan';
 import {
 	announceMissingTemplate,
 	defaultProjectTemplatePath,
