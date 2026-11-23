@@ -113,6 +113,16 @@
 	height: 100%;
 	border-radius: inherit;
 	background-color: var(--interactive-accent);
+	background-image: linear-gradient(
+		90deg,
+		#ff4d4d 0%,
+		#ff9f43 16%,
+		#ffe066 33%,
+		#51cf66 50%,
+		#4dabf7 66%,
+		#845ef7 83%,
+		#e64980 100%
+	);
 	transition: width 150ms ease;
 }
 
