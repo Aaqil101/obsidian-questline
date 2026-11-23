@@ -83,6 +83,7 @@ describe('planGoal', () => {
 				timespan: '6 Months',
 				folder: 'goals',
 				template: 'custom',
+				templatePath: '',
 			},
 			context(),
 			{ goal: null, project: null },
@@ -116,6 +117,7 @@ describe('planGoal', () => {
 				timespan: '',
 				folder: 'goals',
 				template: 'custom',
+				templatePath: '',
 			},
 			context(),
 			{
@@ -145,6 +147,7 @@ describe('planGoal', () => {
 				timespan: '',
 				folder: 'goals',
 				template: 'global',
+				templatePath: '',
 			},
 			context(),
 			{ goal: null, project: null },
@@ -163,12 +166,55 @@ describe('planGoal', () => {
 				timespan: '',
 				folder: 'goals',
 				template: 'custom',
+				templatePath: '',
 			},
 			context(['goals/2026-11-22 - Collision.md']),
 			{ goal: null, project: null },
 		);
 
+		expect(plan.requestedPath).toBe(
+			'goals/2026-11-22 - Collision.md',
+		);
 		expect(plan.path).toBe('goals/2026-11-22 - Collision 2.md');
+	});
+
+	it('links an existing template without creating one', () => {
+		const plan = planGoal(
+			{
+				title: 'Learn Python',
+				category: '',
+				reason: '',
+				timespan: '',
+				folder: 'goals',
+				template: 'existing',
+				templatePath: 'templates/Shared project template.md',
+			},
+			context(['templates/Shared project template.md']),
+			{ goal: null, project: null },
+		);
+
+		expect(plan.template).toBeNull();
+		expect(plan.note.frontmatter.project_template).toBe(
+			'[[templates/Shared project template]]',
+		);
+	});
+
+	it('refuses an existing mode with no template path', () => {
+		expect(() =>
+			planGoal(
+				{
+					title: 'Learn Python',
+					category: '',
+					reason: '',
+					timespan: '',
+					folder: 'goals',
+					template: 'existing',
+					templatePath: '',
+				},
+				context(),
+				{ goal: null, project: null },
+			),
+		).toThrow('Choose an existing template note first.');
 	});
 });
 

@@ -9,8 +9,14 @@ import {
 } from 'obsidian';
 import { attachFolderSuggest, FolderPickModal } from '../settings/folderPicker';
 import type { QuestlineConfig } from '../settings/types';
+import { findTemplateFile } from '../templates/notes';
 import type { GoalDraft, GoalTemplateMode } from './plan';
 import { ValueSuggest } from './suggest';
+import {
+	attachTemplateSuggest,
+	isTemplateNote,
+	pickTemplate,
+} from './templatePicker';
 
 const TIMESPAN_SUGGESTIONS = [
 	'1 Month',
@@ -19,6 +25,15 @@ const TIMESPAN_SUGGESTIONS = [
 	'1 Year',
 	'Infinite',
 ];
+
+interface GoalInputs {
+	title?: TextComponent;
+	category?: TextComponent;
+	reason?: TextAreaComponent;
+	timespan?: TextComponent;
+	folder?: TextComponent;
+	templatePath?: TextComponent;
+}
 
 export class GoalModal extends Modal {
 	constructor(
@@ -35,14 +50,9 @@ export class GoalModal extends Modal {
 		this.setTitle('New goal');
 		this.modalEl.addClass('questline-modal');
 
-		const inputs: {
-			title?: TextComponent;
-			category?: TextComponent;
-			reason?: TextAreaComponent;
-			timespan?: TextComponent;
-			folder?: TextComponent;
-		} = {};
+		const inputs: GoalInputs = {};
 		let templateMode: GoalTemplateMode = 'custom';
+		let existingTemplateRow: Setting | null = null;
 
 		new Setting(contentEl)
 			.setName('Title')
@@ -102,18 +112,47 @@ export class GoalModal extends Modal {
 		new Setting(contentEl)
 			.setName('Project template')
 			.setDesc(
-				'A custom template is created for this goal and linked through ' +
-					'project_template. Pick global to use the configured template instead.',
+				'Create a custom template for this goal, pick an existing ' +
+					'template note, or use the global template.',
 			)
 			.addDropdown((dropdown) =>
 				dropdown
-					.addOption('custom', 'Custom template for this goal')
-					.addOption('global', 'Global project template')
+					.addOption('custom', 'Create a custom template')
+					.addOption('existing', 'Use an existing template')
+					.addOption('global', 'Use the global template')
 					.setValue('custom')
 					.onChange((value) => {
-						templateMode = value === 'global' ? 'global' : 'custom';
+						templateMode =
+							value === 'existing'
+								? 'existing'
+								: value === 'global'
+									? 'global'
+									: 'custom';
+						existingTemplateRow?.settingEl.toggle(
+							templateMode === 'existing',
+						);
 					}),
 			);
+
+		existingTemplateRow = new Setting(contentEl)
+			.setName('Template note')
+			.setDesc(
+				'Pick a template note already in your vault. Create one ' +
+					'first with Create starter templates if you have none.',
+			)
+			.addText((text) => {
+				inputs.templatePath = text;
+				text.setPlaceholder('Project template');
+				attachTemplateSuggest(this.app, text.inputEl);
+			})
+			.addButton((button) =>
+				button.setButtonText('Browse').onClick(() => {
+					pickTemplate(this.app, (path) => {
+						inputs.templatePath?.setValue(path);
+					});
+				}),
+			);
+		existingTemplateRow.settingEl.toggle(false);
 
 		new Setting(contentEl)
 			.addButton((button) =>
@@ -123,19 +162,7 @@ export class GoalModal extends Modal {
 				button
 					.setButtonText('Create goal')
 					.setCta()
-					.onClick(() =>
-						this.submit(
-							{
-								title: inputs.title?.getValue() ?? '',
-								category: inputs.category?.getValue() ?? '',
-								reason: inputs.reason?.getValue() ?? '',
-								timespan: inputs.timespan?.getValue() ?? '',
-								folder: inputs.folder?.getValue() ?? '',
-								template: templateMode,
-							},
-							inputs.title,
-						),
-					),
+					.onClick(() => this.submit(inputs, templateMode)),
 			);
 
 		inputs.title?.inputEl.focus();
@@ -145,18 +172,62 @@ export class GoalModal extends Modal {
 		this.contentEl.empty();
 	}
 
-	private submit(
-		draft: GoalDraft,
-		titleInput: TextComponent | undefined,
-	): void {
-		if (!draft.title.trim()) {
+	private submit(inputs: GoalInputs, mode: GoalTemplateMode): void {
+		const title = inputs.title?.getValue() ?? '';
+		if (!title.trim()) {
 			new Notice('Give the goal a title first.');
-			titleInput?.inputEl.focus();
+			inputs.title?.inputEl.focus();
 
 			return;
 		}
 
+		let templatePath = '';
+		if (mode === 'existing') {
+			templatePath = this.checkExistingTemplate(inputs);
+			if (!templatePath) return;
+		}
+
 		this.close();
-		this.onCreate(draft);
+		this.onCreate({
+			title,
+			category: inputs.category?.getValue() ?? '',
+			reason: inputs.reason?.getValue() ?? '',
+			timespan: inputs.timespan?.getValue() ?? '',
+			folder: inputs.folder?.getValue() ?? '',
+			template: mode,
+			templatePath,
+		});
+	}
+
+	/** Validate the picked template and return its canonical vault path. */
+	private checkExistingTemplate(inputs: GoalInputs): string {
+		const raw = inputs.templatePath?.getValue().trim() ?? '';
+		if (!raw) {
+			new Notice('Choose an existing template note, or create one first.');
+			inputs.templatePath?.inputEl.focus();
+
+			return '';
+		}
+
+		const file = findTemplateFile(this.app, raw);
+		if (!file) {
+			new Notice(
+				'No template note found there. Create one in your vault first.',
+			);
+			inputs.templatePath?.inputEl.focus();
+
+			return '';
+		}
+
+		if (!isTemplateNote(this.app, file)) {
+			new Notice(
+				'That note is not a template. Create a template note first.',
+			);
+			inputs.templatePath?.inputEl.focus();
+
+			return '';
+		}
+
+		return file.path;
 	}
 }

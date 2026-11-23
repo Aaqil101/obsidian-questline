@@ -24,7 +24,7 @@ const CONTROL = /\p{Cc}/gu;
 
 const MAX_COLLISIONS = 1000;
 
-export type GoalTemplateMode = 'custom' | 'global';
+export type GoalTemplateMode = 'custom' | 'existing' | 'global';
 
 export interface GoalDraft {
 	title: string;
@@ -33,6 +33,8 @@ export interface GoalDraft {
 	timespan: string;
 	folder: string;
 	template: GoalTemplateMode;
+	/** Vault path of an existing template note, when `template` is `existing`. */
+	templatePath: string;
 }
 
 export interface ProjectGoalLink {
@@ -60,6 +62,8 @@ export interface PlannedTemplate {
 
 /** A note to write, plus an optional template note it depends on. */
 export interface CreationPlan {
+	/** Path derived from the pattern, before any collision suffix. */
+	requestedPath: string;
 	path: string;
 	note: NoteParts;
 	template: PlannedTemplate | null;
@@ -217,9 +221,25 @@ export function planGoal(
 		draft.template === 'custom'
 			? planProjectTemplate(title, context, templates.project)
 			: null;
+	const existing =
+		draft.template === 'existing' ? draft.templatePath.trim() : '';
 
+	if (draft.template === 'existing' && !existing) {
+		throw new Error('Choose an existing template note first.');
+	}
+
+	const templatePath = template?.path ?? (existing || null);
 	const isTaken = (path: string): boolean =>
 		path === template?.path || exists(path);
+
+	const folder = normalizeFolder(draft.folder);
+	const requestedName = noteName(
+		config.goalFilename,
+		values,
+		now,
+		'Untitled goal',
+	);
+	const requestedPath = joinPath(folder, `${requestedName}.md`);
 
 	const core: Record<string, unknown> = {
 		tags: [config.goalTag],
@@ -228,14 +248,13 @@ export function planGoal(
 	if (category) core.category = category;
 	if (reason) core.reason = reason;
 	if (timespan) core.timespan = timespan;
-	if (template) core.project_template = `[[${withoutExtension(template.path)}]]`;
+	if (templatePath) {
+		core.project_template = `[[${withoutExtension(templatePath)}]]`;
+	}
 
 	return {
-		path: allocatePath(
-			draft.folder,
-			noteName(config.goalFilename, values, now, 'Untitled goal'),
-			isTaken,
-		),
+		requestedPath,
+		path: allocatePath(folder, requestedName, isTaken),
 		note: composeNote({
 			template: templates.goal,
 			fallback: BUILTIN_GOAL,
@@ -282,12 +301,17 @@ export function planProject(
 	if (subtitle) core.subtitle = subtitle;
 	if (goalLink) core.goal = goalLink;
 
+	const folder = normalizeFolder(draft.folder);
+	const requestedName = noteName(
+		config.projectFilename,
+		values,
+		now,
+		'Untitled project',
+	);
+
 	return {
-		path: allocatePath(
-			draft.folder,
-			noteName(config.projectFilename, values, now, 'Untitled project'),
-			context.exists,
-		),
+		requestedPath: joinPath(folder, `${requestedName}.md`),
+		path: allocatePath(folder, requestedName, context.exists),
 		note: composeNote({
 			template: templates.template,
 			fallback: BUILTIN_PROJECT,
