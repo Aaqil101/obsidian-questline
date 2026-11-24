@@ -71,20 +71,11 @@ abstract class QuestlineBlock extends MarkdownRenderChild {
 
 	protected abstract paintBlock(containerEl: HTMLElement): void;
 
-	protected openPath(path: string, event: MouseEvent): void {
-		event.preventDefault();
-		void this.plugin.app.workspace.openLinkText(
-			path,
-			this.sourcePath,
-			false,
-		);
-	}
-
-	/** Reveal an open goal tab, or open the goal in a new tab. */
-	protected openGoal(path: string, event: MouseEvent): void {
+	/** Reveal an open note tab, or open the note in a new tab. */
+	protected revealOrOpen(path: string, event: MouseEvent): void {
 		event.preventDefault();
 
-		const leaf = this.findGoalLeaf(path);
+		const leaf = this.findLeaf(path);
 		if (leaf) {
 			void this.plugin.app.workspace.revealLeaf(leaf);
 
@@ -94,7 +85,7 @@ abstract class QuestlineBlock extends MarkdownRenderChild {
 		void this.plugin.app.workspace.openLinkText(path, this.sourcePath, 'tab');
 	}
 
-	private findGoalLeaf(path: string): WorkspaceLeaf | null {
+	private findLeaf(path: string): WorkspaceLeaf | null {
 		for (const leaf of this.plugin.app.workspace.getLeavesOfType('markdown')) {
 			const view = leaf.view;
 			if (view instanceof MarkdownView && view.file?.path === path) {
@@ -260,7 +251,7 @@ class ProjectProgressBlock extends QuestlineBlock {
 		}
 
 		renderStats(containerEl, stats, (path, event) => {
-			this.openGoal(path, event);
+			this.revealOrOpen(path, event);
 		});
 	}
 }
@@ -294,6 +285,7 @@ function renderProjectList(
 	projects: readonly GoalProjectItem[],
 	compact: boolean,
 	open: OpenProject,
+	timeFormat: TimeFormat,
 ): void {
 	const list = containerEl.createEl('ul', {
 		cls: 'questline-project-list',
@@ -315,20 +307,30 @@ function renderProjectList(
 			cls: 'questline-project-progress',
 			text: projectProgressText(project),
 		});
+		if (project.hours !== null) {
+			meta.createSpan({
+				cls: 'questline-project-time',
+				text: formatTrackedHours(project.hours, timeFormat),
+			});
+		}
 	}
 }
 
 function renderProjectTable(
 	containerEl: HTMLElement,
 	projects: readonly GoalProjectItem[],
+	showHours: boolean,
+	timeFormat: TimeFormat,
 	open: OpenProject,
 ): void {
 	const table = containerEl.createEl('table', {
 		cls: 'questline-project-table',
 	});
 	const head = table.createEl('thead').createEl('tr');
+	const headers = ['Project', 'Status', 'Progress'];
+	if (showHours) headers.push('Hours');
 
-	for (const label of ['Project', 'Status', 'Progress']) {
+	for (const label of headers) {
 		head.createEl('th', { text: label });
 	}
 
@@ -343,6 +345,12 @@ function renderProjectTable(
 			cls: 'questline-project-progress',
 			text: projectProgressText(project),
 		});
+		if (showHours) {
+			row.createEl('td', {
+				cls: 'questline-project-hours',
+				text: formatTrackedHours(project.hours ?? 0, timeFormat),
+			});
+		}
 	}
 }
 
@@ -350,6 +358,7 @@ function renderProjectCards(
 	containerEl: HTMLElement,
 	projects: readonly GoalProjectItem[],
 	barStyle: ProgressBarStyle,
+	timeFormat: TimeFormat,
 	open: OpenProject,
 ): void {
 	const grid = containerEl.createDiv({ cls: 'questline-project-cards' });
@@ -368,6 +377,12 @@ function renderProjectCards(
 				cls: 'questline-empty questline-project-progress',
 				text: 'No tasks',
 			});
+			if (project.hours !== null) {
+				card.createDiv({
+					cls: 'questline-project-time',
+					text: formatTrackedHours(project.hours, timeFormat),
+				});
+			}
 			continue;
 		}
 
@@ -381,6 +396,12 @@ function renderProjectCards(
 			cls: 'questline-project-counts',
 			text: `${project.counts.completed} / ${project.counts.total} tasks`,
 		});
+		if (project.hours !== null) {
+			card.createDiv({
+				cls: 'questline-project-time',
+				text: formatTrackedHours(project.hours, timeFormat),
+			});
+		}
 	}
 }
 
@@ -726,10 +747,7 @@ class GoalProjectsBlock extends QuestlineBlock {
 			refresh();
 		});
 
-		if (
-			config.goalProjectsStyle === 'dashboard' &&
-			config.useTimekeep
-		) {
+		if (config.useTimekeep) {
 			const time = controls.createDiv({
 				cls: 'questline-projects-time',
 			});
@@ -776,7 +794,7 @@ class GoalProjectsBlock extends QuestlineBlock {
 			config.projectStatuses,
 		);
 		const open: OpenProject = (path, event) => {
-			this.openPath(path, event);
+			this.revealOrOpen(path, event);
 		};
 
 		if (config.goalProjectsStyle === 'dashboard') {
@@ -812,21 +830,40 @@ class GoalProjectsBlock extends QuestlineBlock {
 
 		switch (config.goalProjectsStyle) {
 			case 'compact':
-				renderProjectList(containerEl, visible, true, open);
+				renderProjectList(
+					containerEl,
+					visible,
+					true,
+					open,
+					this.state.timeFormat,
+				);
 				return;
 			case 'table':
-				renderProjectTable(containerEl, visible, open);
+				renderProjectTable(
+					containerEl,
+					visible,
+					config.useTimekeep,
+					this.state.timeFormat,
+					open,
+				);
 				return;
 			case 'cards':
 				renderProjectCards(
 					containerEl,
 					visible,
 					config.progressBarStyle,
+					this.state.timeFormat,
 					open,
 				);
 				return;
 			default:
-				renderProjectList(containerEl, visible, false, open);
+				renderProjectList(
+					containerEl,
+					visible,
+					false,
+					open,
+					this.state.timeFormat,
+				);
 		}
 	}
 }
