@@ -8,7 +8,9 @@ import {
 	planGoal,
 	planProject,
 	sanitizeName,
-	withProgressBlock,
+	withGoalProgressBlock,
+	withProjectProgressBlock,
+	withTimekeepBlock,
 	type PlanContext,
 	type ProjectDraft,
 } from './plan';
@@ -42,6 +44,8 @@ function projectDraft(patch: Partial<ProjectDraft> = {}): ProjectDraft {
 		subtitle: '',
 		template: '',
 		folder: 'projects',
+		includeProgress: false,
+		includeTimekeep: false,
 		...patch,
 	};
 }
@@ -86,6 +90,7 @@ describe('planGoal', () => {
 				template: 'custom',
 				templatePath: '',
 				includeProgress: true,
+				includeTimekeep: false,
 			},
 			context(),
 			{ goal: null, project: null },
@@ -104,7 +109,7 @@ describe('planGoal', () => {
 			timespan: '6 Months',
 			project_template: '[[templates/Learn Python project template]]',
 		});
-		expect(plan.note.body).toBe(withProgressBlock(BUILTIN_GOAL.body).trim());
+		expect(plan.note.body).toBe(withGoalProgressBlock(BUILTIN_GOAL.body).trim());
 		expect(plan.template?.parts.frontmatter).toEqual({
 			type: 'questline-template',
 		});
@@ -122,6 +127,7 @@ describe('planGoal', () => {
 				template: 'global',
 				templatePath: '',
 				includeProgress: false,
+				includeTimekeep: false,
 			},
 			context(),
 			{ goal: null, project: null },
@@ -129,6 +135,27 @@ describe('planGoal', () => {
 
 		expect(plan.note.body).toBe(BUILTIN_GOAL.body.trim());
 		expect(plan.note.body).not.toContain('goal-progress');
+	});
+
+	it('adds a timekeep block to a goal when asked', () => {
+		const plan = planGoal(
+			{
+				title: 'Learn Python',
+				category: 'Learning',
+				reason: 'Because',
+				timespan: '6 Months',
+				folder: 'goals',
+				template: 'global',
+				templatePath: '',
+				includeProgress: false,
+				includeTimekeep: true,
+			},
+			context(),
+			{ goal: null, project: null },
+		);
+
+		expect(plan.note.body).toContain('```timekeep');
+		expect(plan.note.body).toContain('{"entries":[]}');
 	});
 
 	it('uses the global project template to seed a custom one', () => {
@@ -142,6 +169,7 @@ describe('planGoal', () => {
 				template: 'custom',
 				templatePath: '',
 				includeProgress: true,
+				includeTimekeep: false,
 			},
 			context(),
 			{
@@ -173,6 +201,7 @@ describe('planGoal', () => {
 				template: 'global',
 				templatePath: '',
 				includeProgress: true,
+				includeTimekeep: false,
 			},
 			context(),
 			{ goal: null, project: null },
@@ -194,6 +223,7 @@ describe('planGoal', () => {
 				template: 'custom',
 				templatePath: '',
 				includeProgress: true,
+				includeTimekeep: false,
 			},
 			context(['goals/2026-11-22 - Collision.md']),
 			{ goal: null, project: null },
@@ -216,6 +246,7 @@ describe('planGoal', () => {
 				template: 'existing',
 				templatePath: 'templates/Shared project template.md',
 				includeProgress: true,
+				includeTimekeep: false,
 			},
 			context(['templates/Shared project template.md']),
 			{ goal: null, project: null },
@@ -239,6 +270,7 @@ describe('planGoal', () => {
 					template: 'existing',
 					templatePath: '',
 					includeProgress: true,
+					includeTimekeep: false,
 				},
 				context(),
 				{ goal: null, project: null },
@@ -247,9 +279,9 @@ describe('planGoal', () => {
 	});
 });
 
-describe('withProgressBlock', () => {
+describe('withGoalProgressBlock', () => {
 	it('appends the block after the body', () => {
-		expect(withProgressBlock('# Goal')).toBe(
+		expect(withGoalProgressBlock('# Goal')).toBe(
 			'# Goal\n\n```goal-progress\n```',
 		);
 	});
@@ -257,11 +289,39 @@ describe('withProgressBlock', () => {
 	it('does not duplicate a block already in the template', () => {
 		const body = '# Goal\n\n```goal-progress\n```';
 
-		expect(withProgressBlock(body)).toBe(body);
+		expect(withGoalProgressBlock(body)).toBe(body);
 	});
 
 	it('uses the block as the whole body when the body is empty', () => {
-		expect(withProgressBlock('  \n')).toBe('```goal-progress\n```');
+		expect(withGoalProgressBlock('  \n')).toBe('```goal-progress\n```');
+	});
+});
+
+describe('withProjectProgressBlock', () => {
+	it('appends the project progress block', () => {
+		expect(withProjectProgressBlock('# Project')).toBe(
+			'# Project\n\n```project-progress\n```',
+		);
+	});
+
+	it('does not duplicate an existing project progress block', () => {
+		const body = '# Project\n\n```project-progress\n```';
+
+		expect(withProjectProgressBlock(body)).toBe(body);
+	});
+});
+
+describe('withTimekeepBlock', () => {
+	it('appends an empty timekeep block', () => {
+		expect(withTimekeepBlock('# Project')).toBe(
+			'# Project\n\n```timekeep\n{"entries":[]}\n```',
+		);
+	});
+
+	it('does not duplicate an existing timekeep block', () => {
+		const body = '# Project\n\n```timekeep\n{"entries":[]}\n```';
+
+		expect(withTimekeepBlock(body)).toBe(body);
 	});
 });
 
@@ -333,6 +393,38 @@ describe('planProject', () => {
 		expect(plan.note.frontmatter.goal).toBe(
 			'[[goals/2026-11-23 - Goal B|Goal B]]',
 		);
+	});
+
+	it('adds the progress and timekeep blocks when asked', () => {
+		const plan = planProject(
+			projectDraft({ includeProgress: true, includeTimekeep: true }),
+			context(),
+			{ template: null },
+		);
+
+		expect(plan.note.body).toContain('```project-progress');
+		expect(plan.note.body).toContain('```timekeep');
+		expect(plan.note.body.indexOf('project-progress')).toBeLessThan(
+			plan.note.body.indexOf('timekeep'),
+		);
+	});
+
+	it('does not duplicate blocks already in the template', () => {
+		const plan = planProject(
+			projectDraft({ includeProgress: true, includeTimekeep: true }),
+			context(),
+			{
+				template: {
+					frontmatter: null,
+					body:
+						'# Project\n\n```project-progress\n```\n\n' +
+						'```timekeep\n{"entries":[]}\n```',
+				},
+			},
+		);
+
+		expect(plan.note.body.match(/```project-progress/g)).toHaveLength(1);
+		expect(plan.note.body.match(/```timekeep/g)).toHaveLength(1);
 	});
 });
 

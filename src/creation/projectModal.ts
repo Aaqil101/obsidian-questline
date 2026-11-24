@@ -8,6 +8,7 @@ import {
 	type ButtonComponent,
 	type TextComponent,
 } from 'obsidian';
+import { withoutDate } from '../index/names';
 import type { GoalNode } from '../index/types';
 import {
 	attachFolderSuggest,
@@ -15,8 +16,8 @@ import {
 	FolderPickModal,
 	NotePickModal,
 } from '../settings/folderPicker';
-import { withoutDate } from '../index/names';
 import type { QuestlineConfig } from '../settings/types';
+import { isTimekeepInstalled } from '../timekeep/timekeep';
 import type { ProjectDraft, ProjectGoalLink } from './plan';
 import {
 	announceMissingTemplate,
@@ -103,6 +104,9 @@ export class ProjectModal extends Modal {
 			null,
 		);
 		let goalButton: ButtonComponent | null = null;
+		let includeProgress = true;
+		let includeTimekeep = false;
+		const timekeepAvailable = isTimekeepInstalled(this.app);
 
 		const updateTemplateDefault = (): void => {
 			const current = inputs.template?.getValue() ?? '';
@@ -207,6 +211,26 @@ export class ProjectModal extends Modal {
 			);
 
 		new Setting(contentEl)
+			.setName('Progress block')
+			.setDesc('Add a live project-progress block to the new note.')
+			.addToggle((toggle) =>
+				toggle.setValue(true).onChange((value) => {
+					includeProgress = value;
+				}),
+			);
+
+		if (timekeepAvailable) {
+			new Setting(contentEl)
+				.setName('Timekeep block')
+				.setDesc('Add an empty timekeep block to the new note.')
+				.addToggle((toggle) =>
+					toggle.setValue(false).onChange((value) => {
+						includeTimekeep = value;
+					}),
+				);
+		}
+
+		new Setting(contentEl)
 			.addButton((button) =>
 				button.setButtonText('Cancel').onClick(() => this.close()),
 			)
@@ -214,7 +238,15 @@ export class ProjectModal extends Modal {
 				button
 					.setButtonText('Create project')
 					.setCta()
-					.onClick(() => this.submit(inputs, selectedGoal, status)),
+					.onClick(() =>
+						this.submit(
+							inputs,
+							selectedGoal,
+							status,
+							includeProgress,
+							includeTimekeep,
+						),
+					),
 			);
 
 		inputs.title?.inputEl.focus();
@@ -228,6 +260,8 @@ export class ProjectModal extends Modal {
 		inputs: ProjectInputs,
 		goal: GoalNode | null,
 		status: string,
+		includeProgress: boolean,
+		includeTimekeep: boolean,
 	): void {
 		const title = inputs.title?.getValue() ?? '';
 		if (!title.trim()) {
@@ -259,6 +293,8 @@ export class ProjectModal extends Modal {
 			subtitle: inputs.subtitle?.getValue() ?? '',
 			template: inputs.template?.getValue() ?? '',
 			folder: inputs.folder?.getValue() ?? '',
+			includeProgress,
+			includeTimekeep,
 		});
 	}
 }

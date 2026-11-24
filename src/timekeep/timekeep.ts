@@ -180,20 +180,40 @@ function apiShape(value: unknown): TimekeepApi | null {
 	return value as unknown as TimekeepApi;
 }
 
+function timekeepPlugin(
+	pluginHost: unknown,
+): Record<string, unknown> | null {
+	if (!isRecord(pluginHost)) return null;
+
+	const manager = pluginHost.plugins;
+	if (!isRecord(manager)) return null;
+
+	// Tests and older callers pass the plugin map directly. The real app
+	// nests it under app.plugins.plugins.
+	const direct = manager.timekeep;
+	if (isRecord(direct)) return direct;
+
+	const registry = manager.plugins;
+	if (!isRecord(registry)) return null;
+
+	const nested = registry.timekeep;
+
+	return isRecord(nested) ? nested : null;
+}
+
 /**
  * Find the Timekeep API through `app.plugins`. Returns null when Timekeep is
  * not installed or does not expose the expected API.
  */
 export function findTimekeepApi(pluginHost: unknown): TimekeepApi | null {
-	if (!isRecord(pluginHost)) return null;
+	const timekeep = timekeepPlugin(pluginHost);
 
-	const plugins = pluginHost.plugins;
-	if (!isRecord(plugins)) return null;
+	return timekeep ? apiShape(timekeep.api) : null;
+}
 
-	const timekeep = plugins.timekeep;
-	if (!isRecord(timekeep)) return null;
-
-	return apiShape(timekeep.api);
+/** True when Timekeep is loaded and present in the plugin registry. */
+export function isTimekeepInstalled(pluginHost: unknown): boolean {
+	return timekeepPlugin(pluginHost) !== null;
 }
 
 /**

@@ -25,9 +25,14 @@ const CONTROL = /\p{Cc}/gu;
 
 const MAX_COLLISIONS = 1000;
 
-/** The live goal progress block, ready to append to a goal body. */
+/** Code blocks creation can append to a new note. */
 const GOAL_PROGRESS_BLOCK = '```goal-progress\n```';
+const PROJECT_PROGRESS_BLOCK = '```project-progress\n```';
+const TIMEKEEP_BLOCK = '```timekeep\n{"entries":[]}\n```';
+
 const GOAL_PROGRESS_MARKER = /^[ \t]*(?:```|~~~)\s*goal-progress\b/im;
+const PROJECT_PROGRESS_MARKER = /^[ \t]*(?:```|~~~)\s*project-progress\b/im;
+const TIMEKEEP_MARKER = /^[ \t]*(?:```|~~~)\s*timekeep\b/im;
 
 /** `{{goal_name}}` and one adjacent separator, for standalone projects. */
 const GOAL_NAME_BEFORE = /\s*[-–—|]\s*\{\{\s*goal_name\s*\}\}/gi;
@@ -47,6 +52,8 @@ export interface GoalDraft {
 	templatePath: string;
 	/** Append a live goal-progress block to the new goal body. */
 	includeProgress: boolean;
+	/** Append an empty timekeep block to the new goal body. */
+	includeTimekeep: boolean;
 }
 
 export interface ProjectGoalLink {
@@ -65,6 +72,10 @@ export interface ProjectDraft {
 	/** Vault path of a template note, or blank for the resolved default. */
 	template: string;
 	folder: string;
+	/** Append a live project-progress block to the new project body. */
+	includeProgress: boolean;
+	/** Append an empty timekeep block to the new project body. */
+	includeTimekeep: boolean;
 }
 
 export interface PlannedTemplate {
@@ -179,16 +190,29 @@ function noteName(
 }
 
 /**
- * Append the live goal-progress block, unless the body already carries one.
- * A body that deliberately renders empty still gets the block.
+ * Append a fenced block once. A body that deliberately renders empty still
+ * gets the block; a body that already carries the same block is unchanged.
  */
-export function withProgressBlock(body: string): string {
+function appendBlock(body: string, block: string, marker: RegExp): string {
 	const trimmed = body.trim();
-	if (GOAL_PROGRESS_MARKER.test(trimmed)) return trimmed;
+	if (marker.test(trimmed)) return trimmed;
 
-	return trimmed
-		? `${trimmed}\n\n${GOAL_PROGRESS_BLOCK}`
-		: GOAL_PROGRESS_BLOCK;
+	return trimmed ? `${trimmed}\n\n${block}` : block;
+}
+
+/** Append the live goal-progress block. */
+export function withGoalProgressBlock(body: string): string {
+	return appendBlock(body, GOAL_PROGRESS_BLOCK, GOAL_PROGRESS_MARKER);
+}
+
+/** Append the live project-progress block. */
+export function withProjectProgressBlock(body: string): string {
+	return appendBlock(body, PROJECT_PROGRESS_BLOCK, PROJECT_PROGRESS_MARKER);
+}
+
+/** Append an empty Timekeep block. */
+export function withTimekeepBlock(body: string): string {
+	return appendBlock(body, TIMEKEEP_BLOCK, TIMEKEEP_MARKER);
 }
 
 /** Frontmatter for a template note: keep useful keys, replace the marker. */
@@ -308,16 +332,17 @@ export function planGoal(
 		values,
 		now,
 	});
+	const progressBody = draft.includeProgress
+		? withGoalProgressBlock(composed.body)
+		: composed.body;
+	const body = draft.includeTimekeep
+		? withTimekeepBlock(progressBody)
+		: progressBody;
 
 	return {
 		requestedPath,
 		path: allocatePath(folder, requestedName, isTaken),
-		note: {
-			frontmatter: composed.frontmatter,
-			body: draft.includeProgress
-				? withProgressBlock(composed.body)
-				: composed.body,
-		},
+		note: { frontmatter: composed.frontmatter, body },
 		template,
 	};
 }
@@ -365,17 +390,24 @@ export function planProject(
 		now,
 		'Untitled project',
 	);
+	const composed = composeNote({
+		template: templates.template,
+		fallback: BUILTIN_PROJECT,
+		core,
+		values,
+		now,
+	});
+	const progressBody = draft.includeProgress
+		? withProjectProgressBlock(composed.body)
+		: composed.body;
+	const body = draft.includeTimekeep
+		? withTimekeepBlock(progressBody)
+		: progressBody;
 
 	return {
 		requestedPath: joinPath(folder, `${requestedName}.md`),
 		path: allocatePath(folder, requestedName, context.exists),
-		note: composeNote({
-			template: templates.template,
-			fallback: BUILTIN_PROJECT,
-			core,
-			values,
-			now,
-		}),
+		note: { frontmatter: composed.frontmatter, body },
 		template: null,
 	};
 }

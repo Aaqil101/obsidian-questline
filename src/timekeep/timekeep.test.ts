@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	extractTimekeepBlocks,
 	findTimekeepApi,
+	isTimekeepInstalled,
 	sumTimekeepBlocks,
 	sumWorkHours,
 	TimekeepCache,
@@ -229,6 +230,19 @@ describe('Timekeep API', () => {
 		expect(findTimekeepApi({ plugins: { timekeep: { api } } })).toBe(api);
 		expect(findTimekeepApi({ plugins: {} })).toBeNull();
 		expect(findTimekeepApi(null)).toBeNull();
+	});
+
+	it('finds the API through the real nested registry', () => {
+		const api = fakeApi(1);
+
+		expect(
+			findTimekeepApi({ plugins: { plugins: { timekeep: { api } } } }),
+		).toBe(api);
+		expect(
+			isTimekeepInstalled({ plugins: { plugins: { timekeep: {} } } }),
+		).toBe(true);
+		expect(isTimekeepInstalled({ plugins: {} })).toBe(false);
+		expect(isTimekeepInstalled(null)).toBe(false);
 	});
 
 	it('prefers the API total when the current time is supplied', () => {
