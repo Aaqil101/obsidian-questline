@@ -171,6 +171,9 @@ describe('resolveConfig', () => {
 		expect(
 			resolveConfig({ goalProjectsStyle: 'cards' }).goalProjectsStyle,
 		).toBe('cards');
+		expect(
+			resolveConfig({ goalProjectsStyle: 'dashboard' }).goalProjectsStyle,
+		).toBe('dashboard');
 
 		const invalid = resolveConfig({
 			goalProjectsStyle:

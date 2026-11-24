@@ -9,7 +9,7 @@ import {
 	type WorkspaceLeaf,
 } from 'obsidian';
 import type QuestlinePlugin from '../main';
-import type { ProgressBarStyle } from '../settings/types';
+import type { ProgressBarStyle, QuestlineConfig } from '../settings/types';
 import { thresholdStage } from './bar';
 import {
 	describeDue,
@@ -19,6 +19,21 @@ import {
 	projectProgressView,
 	type GoalProjectItem,
 } from './model';
+import {
+	DEFAULT_PROJECT_DIRECTION,
+	DEFAULT_PROJECT_SORT,
+	NO_STATUS_FILTER,
+	PROJECT_SORT_OPTIONS,
+	compareText,
+	dashboardStats,
+	filterGoalProjects,
+	formatTrackedHours,
+	projectAuthor,
+	sortGoalProjects,
+	type ProjectDirection,
+	type ProjectSort,
+	type TimeFormat,
+} from './projects';
 
 const NOT_A_GOAL =
 	'This note is not a goal. Add the goal tag to show progress.';
@@ -26,6 +41,8 @@ const NO_GOAL_DATA =
 	'No progress yet. Add tasks, link a project, or set manual progress.';
 const NO_GOAL_PROJECTS =
 	'No projects yet. Create a project linked to this goal.';
+const NO_PROJECT_MATCHES =
+	'No projects match the current filters.';
 const NOT_A_PROJECT =
 	'This note is not a project. Add the project tag and a status to show progress.';
 const NO_PROJECT_TASKS =
@@ -367,7 +384,188 @@ function renderProjectCards(
 	}
 }
 
+interface GoalProjectsState {
+	search: string;
+	status: string;
+	author: string;
+	sort: ProjectSort;
+	direction: ProjectDirection;
+	timeFormat: TimeFormat;
+}
+
+const DEFAULT_GOAL_PROJECTS_STATE: GoalProjectsState = {
+	search: '',
+	status: '',
+	author: '',
+	sort: DEFAULT_PROJECT_SORT,
+	direction: DEFAULT_PROJECT_DIRECTION,
+	timeFormat: 'decimal',
+};
+
+interface ProjectOption {
+	value: string;
+	label: string;
+}
+
+const STATUS_EMOJI: Record<string, string> = {
+	todo: '📋',
+	waiting: '⏳',
+	'in progress': '🔄',
+	completed: '✅',
+	discarded: '🚫',
+	'on hold': '⏸️',
+};
+
+function statusEmoji(status: string | null): string {
+	return status ? (STATUS_EMOJI[status.toLowerCase()] ?? '⚪') : '⚪';
+}
+
+function statusLabel(status: string | null): string {
+	return status ?? 'No status';
+}
+
+/** Five filled/empty blocks, matching the original project dashboard. */
+function blockBar(percent: number): string {
+	const filled = Math.round(
+		(Math.max(0, Math.min(100, percent)) / 100) * 5,
+	);
+
+	return '█'.repeat(filled) + '░'.repeat(5 - filled);
+}
+
+function statusOptions(
+	items: readonly GoalProjectItem[],
+	statuses: readonly string[],
+): ProjectOption[] {
+	const seen = new Map<string, string>();
+
+	for (const status of statuses) {
+		const key = status.toLowerCase();
+		if (!seen.has(key)) seen.set(key, status);
+	}
+
+	for (const item of items) {
+		if (!item.status) continue;
+
+		const key = item.status.toLowerCase();
+		if (!seen.has(key)) seen.set(key, item.status);
+	}
+
+	const options = [...seen.values()].map((status) => ({
+		value: status,
+		label: status,
+	}));
+
+	if (items.some((item) => item.status === null)) {
+		options.push({ value: NO_STATUS_FILTER, label: 'No status' });
+	}
+
+	return options;
+}
+
+function authorOptions(items: readonly GoalProjectItem[]): ProjectOption[] {
+	const seen = new Map<string, string>();
+
+	for (const item of items) {
+		for (const author of item.authors) {
+			const key = author.toLowerCase();
+			if (!seen.has(key)) seen.set(key, author);
+		}
+	}
+
+	const options = [...seen.values()]
+		.sort(compareText)
+		.map((author) => ({ value: author, label: author }));
+
+	if (items.some((item) => item.authors.length === 0)) {
+		options.push({ value: 'None', label: 'None' });
+	}
+
+	return options;
+}
+
+function renderProjectStats(
+	containerEl: HTMLElement,
+	items: readonly GoalProjectItem[],
+	config: QuestlineConfig,
+	timeFormat: TimeFormat,
+): void {
+	const row = containerEl.createDiv({ cls: 'questline-project-stats' });
+
+	for (const stat of dashboardStats(items, config.useTimekeep, timeFormat)) {
+		const cell = row.createDiv({ cls: 'questline-project-stat' });
+		cell.createDiv({
+			cls: 'questline-project-stat-label',
+			text: stat.label,
+		});
+		cell.createDiv({
+			cls: 'questline-project-stat-value',
+			text: stat.value,
+		});
+	}
+}
+
+function renderProjectDashboard(
+	containerEl: HTMLElement,
+	projects: readonly GoalProjectItem[],
+	config: QuestlineConfig,
+	timeFormat: TimeFormat,
+	open: OpenProject,
+): void {
+	const wrap = containerEl.createDiv({ cls: 'questline-project-table-wrap' });
+	const table = wrap.createEl('table', {
+		cls: 'questline-project-table questline-project-table--dashboard',
+	});
+	const head = table.createEl('thead').createEl('tr');
+	const headers = ['Project', 'Author', 'Status', 'Progress', 'Tasks'];
+	if (config.useTimekeep) headers.push('Hours');
+
+	for (const header of headers) head.createEl('th', { text: header });
+
+	const body = table.createEl('tbody');
+
+	for (const project of projects) {
+		const row = body.createEl('tr');
+		const name = row.createEl('td');
+		addProjectLink(name, project, open);
+		row.createEl('td', {
+			cls: 'questline-project-author',
+			text: projectAuthor(project),
+		});
+		row.createEl('td', {
+			text: `${statusEmoji(project.status)} ${statusLabel(project.status)}`,
+		});
+
+		const progress = row.createEl('td', {
+			cls: 'questline-project-progress',
+		});
+		progress.createSpan({
+			cls: 'questline-project-blocks',
+			text: blockBar(project.counts.percent),
+		});
+		progress.createSpan({
+			cls: 'questline-project-percent',
+			text: `${project.counts.percent}%`,
+		});
+		row.createEl('td', {
+			cls: 'questline-project-tasks',
+			text: `${project.counts.completed}/${project.counts.total}`,
+		});
+
+		if (config.useTimekeep) {
+			row.createEl('td', {
+				cls: 'questline-project-hours',
+				text: formatTrackedHours(project.hours ?? 0, timeFormat),
+			});
+		}
+	}
+}
+
 class GoalProjectsBlock extends QuestlineBlock {
+	private readonly state: GoalProjectsState = {
+		...DEFAULT_GOAL_PROJECTS_STATE,
+	};
+
 	protected paintBlock(containerEl: HTMLElement): void {
 		const index = this.plugin.getIndex();
 		const goal = index.goalByPath.get(this.sourcePath);
@@ -379,7 +577,7 @@ class GoalProjectsBlock extends QuestlineBlock {
 		}
 
 		const config = this.plugin.getConfig();
-		const projects = goalProjectsView(index, goal, config);
+		const projects = goalProjectsView(index, goal, config, new Date());
 
 		if (projects.length === 0) {
 			renderEmpty(containerEl, NO_GOAL_PROJECTS);
@@ -387,27 +585,248 @@ class GoalProjectsBlock extends QuestlineBlock {
 			return;
 		}
 
+		let body: HTMLElement | null = null;
+		const refresh = (): void => {
+			if (body) this.renderBody(body, projects, config);
+		};
+
+		this.renderToolbar(containerEl, projects, config, refresh);
+		body = containerEl.createDiv({ cls: 'questline-goal-projects-body' });
+		refresh();
+	}
+
+	private renderToolbar(
+		containerEl: HTMLElement,
+		projects: readonly GoalProjectItem[],
+		config: QuestlineConfig,
+		refresh: () => void,
+	): void {
+		const controls = containerEl.createDiv({
+			cls: 'questline-projects-controls',
+		});
+
+		const search = controls.createEl('input', {
+			cls: 'questline-projects-search',
+			attr: { type: 'text', placeholder: 'Search projects' },
+		});
+		search.value = this.state.search;
+		search.addEventListener('input', () => {
+			this.state.search = search.value;
+			refresh();
+		});
+
+		const status = controls.createEl('select', {
+			cls: 'questline-projects-select',
+			attr: { 'aria-label': 'Filter by status' },
+		});
+		status.createEl('option', {
+			text: 'All statuses',
+			attr: { value: '' },
+		});
+		const statuses = statusOptions(projects, config.projectStatuses);
+		for (const option of statuses) {
+			status.createEl('option', {
+				text: option.label,
+				attr: { value: option.value },
+			});
+		}
+		if (!['', ...statuses.map((option) => option.value)].includes(
+			this.state.status,
+		)) {
+			this.state.status = '';
+		}
+		status.value = this.state.status;
+		status.addEventListener('change', () => {
+			this.state.status = status.value;
+			refresh();
+		});
+
+		const author = controls.createEl('select', {
+			cls: 'questline-projects-select',
+			attr: { 'aria-label': 'Filter by author' },
+		});
+		author.createEl('option', {
+			text: 'All authors',
+			attr: { value: '' },
+		});
+		const authors = authorOptions(projects);
+		for (const option of authors) {
+			author.createEl('option', {
+				text: option.label,
+				attr: { value: option.value },
+			});
+		}
+		if (!['', ...authors.map((option) => option.value)].includes(
+			this.state.author,
+		)) {
+			this.state.author = '';
+		}
+		author.value = this.state.author;
+		author.addEventListener('change', () => {
+			this.state.author = author.value;
+			refresh();
+		});
+
+		const sort = controls.createEl('select', {
+			cls: 'questline-projects-select',
+			attr: { 'aria-label': 'Sort projects' },
+		});
+		for (const option of PROJECT_SORT_OPTIONS) {
+			sort.createEl('option', {
+				text: option.label,
+				attr: { value: option.value },
+			});
+		}
+		sort.value = this.state.sort;
+		sort.addEventListener('change', () => {
+			const next = PROJECT_SORT_OPTIONS.find(
+				(option) => option.value === sort.value,
+			);
+			this.state.sort = next?.value ?? DEFAULT_PROJECT_SORT;
+			refresh();
+		});
+
+		const direction = controls.createEl('button', {
+			cls: 'questline-projects-button',
+			text: this.state.direction === 'asc' ? '↑' : '↓',
+			attr: {
+				type: 'button',
+				title:
+					this.state.direction === 'asc'
+						? 'Ascending'
+						: 'Descending',
+			},
+		});
+		direction.addEventListener('click', () => {
+			this.state.direction =
+				this.state.direction === 'asc' ? 'desc' : 'asc';
+			const ascending = this.state.direction === 'asc';
+			direction.setText(ascending ? '↑' : '↓');
+			direction.setAttr('title', ascending ? 'Ascending' : 'Descending');
+			refresh();
+		});
+
+		const clear = controls.createEl('button', {
+			cls: 'questline-projects-button',
+			text: 'Clear',
+			attr: { type: 'button' },
+		});
+		clear.addEventListener('click', () => {
+			this.state.search = '';
+			this.state.status = '';
+			this.state.author = '';
+			this.state.sort = DEFAULT_PROJECT_SORT;
+			this.state.direction = DEFAULT_PROJECT_DIRECTION;
+			search.value = '';
+			status.value = '';
+			author.value = '';
+			sort.value = DEFAULT_PROJECT_SORT;
+			direction.setText('↑');
+			direction.setAttr('title', 'Ascending');
+			refresh();
+		});
+
+		if (
+			config.goalProjectsStyle === 'dashboard' &&
+			config.useTimekeep
+		) {
+			const time = controls.createDiv({
+				cls: 'questline-projects-time',
+			});
+			time.createSpan({ text: 'Time:' });
+
+			const buttons: HTMLButtonElement[] = [];
+			for (const format of ['readable', 'decimal'] as const) {
+				const button = time.createEl('button', {
+					cls: 'questline-projects-time-button',
+					text: format === 'readable' ? 'H:M' : 'Decimal',
+					attr: { type: 'button' },
+				});
+				if (this.state.timeFormat === format) {
+					button.addClass('is-active');
+				}
+				button.addEventListener('click', () => {
+					this.state.timeFormat = format;
+					for (const other of buttons) {
+						other.toggleClass('is-active', other === button);
+					}
+					refresh();
+				});
+				buttons.push(button);
+			}
+		}
+	}
+
+	private renderBody(
+		containerEl: HTMLElement,
+		projects: readonly GoalProjectItem[],
+		config: QuestlineConfig,
+	): void {
+		containerEl.empty();
+
+		const filtered = filterGoalProjects(projects, {
+			search: this.state.search,
+			status: this.state.status,
+			author: this.state.author,
+		});
+		const visible = sortGoalProjects(
+			filtered,
+			this.state.sort,
+			this.state.direction,
+			config.projectStatuses,
+		);
 		const open: OpenProject = (path, event) => {
 			this.openPath(path, event);
 		};
 
+		if (config.goalProjectsStyle === 'dashboard') {
+			renderProjectStats(
+				containerEl,
+				projects,
+				config,
+				this.state.timeFormat,
+			);
+
+			if (visible.length === 0) {
+				renderEmpty(containerEl, NO_PROJECT_MATCHES);
+
+				return;
+			}
+
+			renderProjectDashboard(
+				containerEl,
+				visible,
+				config,
+				this.state.timeFormat,
+				open,
+			);
+
+			return;
+		}
+
+		if (visible.length === 0) {
+			renderEmpty(containerEl, NO_PROJECT_MATCHES);
+
+			return;
+		}
+
 		switch (config.goalProjectsStyle) {
 			case 'compact':
-				renderProjectList(containerEl, projects, true, open);
+				renderProjectList(containerEl, visible, true, open);
 				return;
 			case 'table':
-				renderProjectTable(containerEl, projects, open);
+				renderProjectTable(containerEl, visible, open);
 				return;
 			case 'cards':
 				renderProjectCards(
 					containerEl,
-					projects,
+					visible,
 					config.progressBarStyle,
 					open,
 				);
 				return;
 			default:
-				renderProjectList(containerEl, projects, false, open);
+				renderProjectList(containerEl, visible, false, open);
 		}
 	}
 }

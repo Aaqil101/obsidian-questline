@@ -9,6 +9,7 @@ import type { TaskProgress, TaskSource } from '../progress/tasks';
 import type { QuestlineConfig } from '../settings/types';
 import { sumWorkHours } from '../timekeep/timekeep';
 import { parseTimespan } from '../time/timespan';
+import { sortGoalProjects } from './projects';
 
 export interface DueInfo {
 	/** True for `Infinite`, which has no due date by design. */
@@ -51,6 +52,9 @@ export interface GoalProjectItem {
 	name: string;
 	status: string | null;
 	counts: TaskProgress;
+	authors: string[];
+	/** Tracked hours, or null when Timekeep work hours are disabled. */
+	hours: number | null;
 }
 
 function dayWord(days: number): string {
@@ -192,28 +196,6 @@ export function projectProgressView(
 	};
 }
 
-/** Deterministic, locale-independent text order. */
-function compareText(left: string, right: string): number {
-	const a = left.toLowerCase();
-	const b = right.toLowerCase();
-
-	if (a < b) return -1;
-	if (a > b) return 1;
-
-	return 0;
-}
-
-/** Configured status order first, then unknown statuses, then no status. */
-function statusRank(status: string | null, statuses: readonly string[]): number {
-	if (status === null) return statuses.length + 1;
-
-	const found = statuses.findIndex(
-		(value) => value.toLowerCase() === status.toLowerCase(),
-	);
-
-	return found < 0 ? statuses.length : found;
-}
-
 /**
  * The projects linked to a goal, each with its own progress. Duplicate links
  * collapse, and the order is the configured status order then the name, so
@@ -223,6 +205,7 @@ export function goalProjectsView(
 	index: QuestlineIndex,
 	goal: GoalNode,
 	config: QuestlineConfig,
+	now: Date = new Date(),
 ): GoalProjectItem[] {
 	const items: GoalProjectItem[] = [];
 	const seen = new Set<string>();
@@ -247,18 +230,13 @@ export function goalProjectsView(
 			name: project.name,
 			status: project.fields.status,
 			counts,
+			authors: project.fields.authors,
+			hours:
+				config.useTimekeep && note
+					? sumWorkHours(note.body, { now }).hours
+					: null,
 		});
 	}
 
-	return items.sort((left, right) => {
-		const rank =
-			statusRank(left.status, config.projectStatuses) -
-			statusRank(right.status, config.projectStatuses);
-		if (rank !== 0) return rank;
-
-		const name = compareText(left.name, right.name);
-		if (name !== 0) return name;
-
-		return compareText(left.path, right.path);
-	});
+	return sortGoalProjects(items, 'status', 'asc', config.projectStatuses);
 }

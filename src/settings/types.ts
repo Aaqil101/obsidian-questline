@@ -12,7 +12,12 @@ export type ProgressBarStyle =
 	| 'threshold';
 
 /** How the goal-projects block lists linked projects. */
-export type GoalProjectsStyle = 'minimal' | 'compact' | 'table' | 'cards';
+export type GoalProjectsStyle =
+	| 'minimal'
+	| 'compact'
+	| 'table'
+	| 'cards'
+	| 'dashboard';
 
 /** Whether progress counts every task or only the tasks under one heading. */
 export type TaskScopeMode = 'all' | 'heading';
@@ -203,6 +208,7 @@ function cleanGoalProjectsStyle(value: unknown): GoalProjectsStyle {
 	return value === 'compact' ||
 		value === 'table' ||
 		value === 'cards' ||
+		value === 'dashboard' ||
 		value === 'minimal'
 		? value
 		: DEFAULT_SETTINGS.goalProjectsStyle;

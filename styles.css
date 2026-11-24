@@ -309,3 +309,128 @@
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 }
+
+/* Shared toolbar above every goal-projects style. */
+.questline-projects-controls {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin: 6px 0 10px;
+}
+
+.questline-projects-search {
+	flex: 1 1 160px;
+	min-width: 120px;
+	padding: 5px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background-color: var(--background-primary);
+	color: var(--text-normal);
+}
+
+.questline-projects-select,
+.questline-projects-button {
+	padding: 4px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background-color: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-smaller);
+}
+
+.questline-projects-button {
+	cursor: pointer;
+}
+
+.questline-projects-button:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.questline-projects-time {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.questline-projects-time-button {
+	padding: 2px 6px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background-color: var(--background-primary);
+	color: var(--text-muted);
+	cursor: pointer;
+	font-size: var(--font-ui-smaller);
+}
+
+.questline-projects-time-button.is-active {
+	border-color: var(--interactive-accent);
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+/* Dashboard style: stats row and detailed table. */
+.questline-project-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+	gap: 1px;
+	margin: 2px 0 12px;
+	overflow: hidden;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-modifier-border);
+}
+
+.questline-project-stat {
+	padding: 8px 10px;
+	background-color: var(--background-primary);
+}
+
+.questline-project-stat-label {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.questline-project-stat-value {
+	color: var(--text-normal);
+	font-size: var(--font-ui-large);
+	font-weight: var(--font-bold);
+	line-height: 1.2;
+}
+
+.questline-project-table-wrap {
+	overflow-x: auto;
+}
+
+.questline-project-table--dashboard {
+	table-layout: auto;
+	font-size: var(--font-ui-small);
+}
+
+.questline-project-table--dashboard th {
+	text-align: left;
+}
+
+.questline-project-table--dashboard td {
+	white-space: nowrap;
+}
+
+.questline-project-author,
+.questline-project-hours,
+.questline-project-tasks {
+	color: var(--text-muted);
+}
+
+.questline-project-blocks {
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-smaller);
+	letter-spacing: 0;
+}
+
+.questline-project-percent {
+	margin-left: 6px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}

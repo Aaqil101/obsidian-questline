@@ -39,7 +39,7 @@ export function appearanceGroup(host: SettingsHost): SettingDefinitionGroup {
 			),
 			renderRow(
 				'Goal projects style',
-				'Minimal keeps the bulleted list. Compact tightens each row. Table adds columns. Cards show each project with a bar.',
+				'Minimal keeps the bulleted list. Compact tightens each row. Table adds columns. Cards show each project with a bar. Dashboard adds stats and a detailed table.',
 				(setting) => {
 					setting.addDropdown((dropdown) =>
 						dropdown
@@ -47,6 +47,7 @@ export function appearanceGroup(host: SettingsHost): SettingDefinitionGroup {
 							.addOption('compact', 'Compact')
 							.addOption('table', 'Table')
 							.addOption('cards', 'Cards')
+							.addOption('dashboard', 'Dashboard')
 							.setValue(plugin.settings.goalProjectsStyle)
 							.onChange((value) => {
 								const goalProjectsStyle: GoalProjectsStyle =
@@ -56,7 +57,9 @@ export function appearanceGroup(host: SettingsHost): SettingDefinitionGroup {
 											? 'table'
 											: value === 'cards'
 												? 'cards'
-												: 'minimal';
+												: value === 'dashboard'
+													? 'dashboard'
+													: 'minimal';
 								void plugin.updateSettings({
 									goalProjectsStyle,
 								});
