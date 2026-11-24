@@ -60,17 +60,19 @@ export default class QuestlinePlugin extends Plugin {
 
 	/** Persist a settings change and rebuild the index if it depends on it. */
 	async updateSettings(patch: Partial<QuestlineSettings>): Promise<void> {
-		const previousStyle = this.getConfig().progressBarStyle;
+		const previous = this.getConfig();
 		this.settings = { ...this.settings, ...patch };
 		// Rebuild before saving, so a button clicked right after leaving an
 		// input already reads the value that was just typed.
 		this.config = this.buildConfig();
-		const styleChanged = this.config.progressBarStyle !== previousStyle;
+		const appearanceChanged =
+			this.config.progressBarStyle !== previous.progressBarStyle ||
+			this.config.goalProjectsStyle !== previous.goalProjectsStyle;
 		await this.saveSettings();
 
 		if (await this.questline.setConfig(this.config)) {
 			this.questline.scheduleRefresh();
-		} else if (styleChanged) {
+		} else if (appearanceChanged) {
 			this.questline.notifyRefresh();
 		}
 	}

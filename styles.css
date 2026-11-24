@@ -202,3 +202,110 @@
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 }
+
+/* Compact rows: no bullets, status and progress aligned right. */
+.questline-project-list--compact {
+	margin-top: 2px;
+	padding-left: 0;
+	list-style: none;
+}
+
+.questline-project-list--compact .questline-project-item {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 0;
+	padding: 5px 0;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.questline-project-list--compact .questline-project-item:last-child {
+	border-bottom: none;
+}
+
+.questline-project-list--compact .questline-project-meta {
+	margin-left: 0;
+}
+
+.questline-project-list--compact .questline-project-status,
+.questline-project-card .questline-project-status {
+	padding: 1px 8px;
+	border-radius: 999px;
+	background-color: var(--background-modifier-hover);
+	white-space: nowrap;
+}
+
+/* Table: one row per project. */
+.questline-project-table {
+	width: 100%;
+	margin-top: 4px;
+	border-collapse: collapse;
+	font-size: var(--font-ui-small);
+}
+
+.questline-project-table th {
+	padding: 4px 6px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	color: var(--text-muted);
+	font-weight: var(--font-medium);
+	text-align: left;
+}
+
+.questline-project-table td {
+	padding: 5px 6px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	vertical-align: top;
+}
+
+.questline-project-table tr:last-child td {
+	border-bottom: none;
+}
+
+.questline-project-table .questline-project-progress {
+	white-space: nowrap;
+}
+
+/* Cards: a small grid with a bar per project. */
+.questline-project-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+	gap: 10px;
+	margin-top: 6px;
+}
+
+.questline-project-card {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-secondary);
+}
+
+.questline-project-card-header {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.questline-project-card .questline-project-status {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.questline-project-card .questline-progress-row {
+	gap: 8px;
+	margin-top: 2px;
+}
+
+.questline-project-card .questline-percent {
+	font-size: var(--font-ui-smaller);
+}
+
+.questline-project-counts {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}

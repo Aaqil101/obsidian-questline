@@ -11,6 +11,9 @@ export type ProgressBarStyle =
 	| 'normal'
 	| 'threshold';
 
+/** How the goal-projects block lists linked projects. */
+export type GoalProjectsStyle = 'minimal' | 'compact' | 'table' | 'cards';
+
 /** Whether progress counts every task or only the tasks under one heading. */
 export type TaskScopeMode = 'all' | 'heading';
 
@@ -36,6 +39,7 @@ export interface QuestlineSettings {
 	useTimekeep: boolean;
 	openAfterCreate: boolean;
 	progressBarStyle: ProgressBarStyle;
+	goalProjectsStyle: GoalProjectsStyle;
 }
 
 export const DEFAULT_GOAL_CATEGORIES = [
@@ -82,6 +86,7 @@ export const DEFAULT_SETTINGS: QuestlineSettings = {
 	useTimekeep: true,
 	openAfterCreate: true,
 	progressBarStyle: 'rainbow',
+	goalProjectsStyle: 'minimal',
 };
 
 /**
@@ -106,6 +111,7 @@ export interface QuestlineConfig {
 	useTimekeep: boolean;
 	openAfterCreate: boolean;
 	progressBarStyle: ProgressBarStyle;
+	goalProjectsStyle: GoalProjectsStyle;
 }
 
 export type FolderKind = 'folder' | 'file' | 'missing';
@@ -193,6 +199,15 @@ function cleanProgressBarStyle(value: unknown): ProgressBarStyle {
 		: DEFAULT_SETTINGS.progressBarStyle;
 }
 
+function cleanGoalProjectsStyle(value: unknown): GoalProjectsStyle {
+	return value === 'compact' ||
+		value === 'table' ||
+		value === 'cards' ||
+		value === 'minimal'
+		? value
+		: DEFAULT_SETTINGS.goalProjectsStyle;
+}
+
 function cleanTaskScope(mode: unknown, heading: unknown): TaskScope {
 	const name = typeof heading === 'string' ? heading.trim() : '';
 	if (mode !== 'heading' || !name) return ALL_TASKS;
@@ -273,6 +288,7 @@ export function resolveConfig(
 			DEFAULT_SETTINGS.openAfterCreate,
 		),
 		progressBarStyle: cleanProgressBarStyle(stored.progressBarStyle),
+		goalProjectsStyle: cleanGoalProjectsStyle(stored.goalProjectsStyle),
 	};
 }
 

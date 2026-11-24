@@ -1,5 +1,5 @@
 import type { SettingDefinitionGroup } from 'obsidian';
-import type { ProgressBarStyle } from './types';
+import type { GoalProjectsStyle, ProgressBarStyle } from './types';
 import { renderRow, type SettingsHost } from './ui';
 
 /** Landing group: visual choices that do not affect the index. */
@@ -32,6 +32,33 @@ export function appearanceGroup(host: SettingsHost): SettingDefinitionGroup {
 												: 'rainbow';
 								void plugin.updateSettings({
 									progressBarStyle,
+								});
+							}),
+					);
+				},
+			),
+			renderRow(
+				'Goal projects style',
+				'Minimal keeps the bulleted list. Compact tightens each row. Table adds columns. Cards show each project with a bar.',
+				(setting) => {
+					setting.addDropdown((dropdown) =>
+						dropdown
+							.addOption('minimal', 'Minimal')
+							.addOption('compact', 'Compact')
+							.addOption('table', 'Table')
+							.addOption('cards', 'Cards')
+							.setValue(plugin.settings.goalProjectsStyle)
+							.onChange((value) => {
+								const goalProjectsStyle: GoalProjectsStyle =
+									value === 'compact'
+										? 'compact'
+										: value === 'table'
+											? 'table'
+											: value === 'cards'
+												? 'cards'
+												: 'minimal';
+								void plugin.updateSettings({
+									goalProjectsStyle,
 								});
 							}),
 					);

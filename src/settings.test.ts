@@ -47,6 +47,7 @@ describe('resolveConfig', () => {
 		expect(config.useTimekeep).toBe(true);
 		expect(config.openAfterCreate).toBe(true);
 		expect(config.progressBarStyle).toBe('rainbow');
+		expect(config.goalProjectsStyle).toBe('minimal');
 	});
 
 	it('normalizes custom tags and falls back when they are blank', () => {
@@ -158,6 +159,25 @@ describe('resolveConfig', () => {
 		});
 
 		expect(invalid.progressBarStyle).toBe('rainbow');
+	});
+
+	it('accepts the goal projects styles and falls back otherwise', () => {
+		expect(
+			resolveConfig({ goalProjectsStyle: 'compact' }).goalProjectsStyle,
+		).toBe('compact');
+		expect(
+			resolveConfig({ goalProjectsStyle: 'table' }).goalProjectsStyle,
+		).toBe('table');
+		expect(
+			resolveConfig({ goalProjectsStyle: 'cards' }).goalProjectsStyle,
+		).toBe('cards');
+
+		const invalid = resolveConfig({
+			goalProjectsStyle:
+				'list' as typeof DEFAULT_SETTINGS.goalProjectsStyle,
+		});
+
+		expect(invalid.goalProjectsStyle).toBe('minimal');
 	});
 
 	it('normalizes template note paths', () => {

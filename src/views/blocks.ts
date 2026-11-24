@@ -17,6 +17,7 @@ import {
 	goalProgressView,
 	goalProjectsView,
 	projectProgressView,
+	type GoalProjectItem,
 } from './model';
 
 const NOT_A_GOAL =
@@ -247,6 +248,125 @@ class ProjectProgressBlock extends QuestlineBlock {
 	}
 }
 
+type OpenProject = (path: string, event: MouseEvent) => void;
+
+function projectProgressText(project: GoalProjectItem): string {
+	return project.counts.total === 0
+		? 'No tasks'
+		: `${project.counts.percent}% ` +
+				`(${project.counts.completed}/${project.counts.total})`;
+}
+
+function addProjectLink(
+	containerEl: HTMLElement,
+	project: GoalProjectItem,
+	open: OpenProject,
+): void {
+	const link = containerEl.createEl('a', {
+		cls: 'internal-link questline-project-link',
+		text: project.name,
+	});
+	link.setAttr('href', project.path);
+	link.addEventListener('click', (event) => {
+		open(project.path, event);
+	});
+}
+
+function renderProjectList(
+	containerEl: HTMLElement,
+	projects: readonly GoalProjectItem[],
+	compact: boolean,
+	open: OpenProject,
+): void {
+	const list = containerEl.createEl('ul', {
+		cls: 'questline-project-list',
+	});
+	if (compact) list.addClass('questline-project-list--compact');
+
+	for (const project of projects) {
+		const entry = list.createEl('li', {
+			cls: 'questline-project-item',
+		});
+		addProjectLink(entry, project, open);
+
+		const meta = entry.createSpan({ cls: 'questline-project-meta' });
+		meta.createSpan({
+			cls: 'questline-project-status',
+			text: project.status ?? 'No status',
+		});
+		meta.createSpan({
+			cls: 'questline-project-progress',
+			text: projectProgressText(project),
+		});
+	}
+}
+
+function renderProjectTable(
+	containerEl: HTMLElement,
+	projects: readonly GoalProjectItem[],
+	open: OpenProject,
+): void {
+	const table = containerEl.createEl('table', {
+		cls: 'questline-project-table',
+	});
+	const head = table.createEl('thead').createEl('tr');
+
+	for (const label of ['Project', 'Status', 'Progress']) {
+		head.createEl('th', { text: label });
+	}
+
+	const body = table.createEl('tbody');
+
+	for (const project of projects) {
+		const row = body.createEl('tr');
+		const name = row.createEl('td');
+		addProjectLink(name, project, open);
+		row.createEl('td', { text: project.status ?? 'No status' });
+		row.createEl('td', {
+			cls: 'questline-project-progress',
+			text: projectProgressText(project),
+		});
+	}
+}
+
+function renderProjectCards(
+	containerEl: HTMLElement,
+	projects: readonly GoalProjectItem[],
+	barStyle: ProgressBarStyle,
+	open: OpenProject,
+): void {
+	const grid = containerEl.createDiv({ cls: 'questline-project-cards' });
+
+	for (const project of projects) {
+		const card = grid.createDiv({ cls: 'questline-project-card' });
+		const header = card.createDiv({ cls: 'questline-project-card-header' });
+		addProjectLink(header, project, open);
+		header.createSpan({
+			cls: 'questline-project-status',
+			text: project.status ?? 'No status',
+		});
+
+		if (project.counts.total === 0) {
+			card.createDiv({
+				cls: 'questline-empty questline-project-progress',
+				text: 'No tasks',
+			});
+			continue;
+		}
+
+		renderProgressRow(
+			card,
+			project.counts.percent,
+			`Project progress: ${project.name}`,
+			barStyle,
+		);
+		card.createDiv({
+			cls: 'questline-project-counts',
+			text: `${project.counts.completed} / ${project.counts.total} tasks`,
+		});
+	}
+}
+
 class GoalProjectsBlock extends QuestlineBlock {
 	protected paintBlock(containerEl: HTMLElement): void {
 		const index = this.plugin.getIndex();
@@ -258,11 +378,8 @@ class GoalProjectsBlock extends QuestlineBlock {
 			return;
 		}
 
-		const projects = goalProjectsView(
-			index,
-			goal,
-			this.plugin.getConfig(),
-		);
+		const config = this.plugin.getConfig();
+		const projects = goalProjectsView(index, goal, config);
 
 		if (projects.length === 0) {
 			renderEmpty(containerEl, NO_GOAL_PROJECTS);
@@ -270,38 +387,27 @@ class GoalProjectsBlock extends QuestlineBlock {
 			return;
 		}
 
-		const list = containerEl.createEl('ul', {
-			cls: 'questline-project-list',
-		});
+		const open: OpenProject = (path, event) => {
+			this.openPath(path, event);
+		};
 
-		for (const project of projects) {
-			const entry = list.createEl('li', {
-				cls: 'questline-project-item',
-			});
-			const link = entry.createEl('a', {
-				cls: 'internal-link questline-project-link',
-				text: project.name,
-			});
-			link.setAttr('href', project.path);
-			link.addEventListener('click', (event) => {
-				this.openPath(project.path, event);
-			});
-
-			const meta = entry.createSpan({
-				cls: 'questline-project-meta',
-			});
-			meta.createSpan({
-				cls: 'questline-project-status',
-				text: project.status ?? 'No status',
-			});
-			meta.createSpan({
-				cls: 'questline-project-progress',
-				text:
-					project.counts.total === 0
-						? 'No tasks'
-						: `${project.counts.percent}% ` +
-							`(${project.counts.completed}/${project.counts.total})`,
-			});
+		switch (config.goalProjectsStyle) {
+			case 'compact':
+				renderProjectList(containerEl, projects, true, open);
+				return;
+			case 'table':
+				renderProjectTable(containerEl, projects, open);
+				return;
+			case 'cards':
+				renderProjectCards(
+					containerEl,
+					projects,
+					config.progressBarStyle,
+					open,
+				);
+				return;
+			default:
+				renderProjectList(containerEl, projects, false, open);
 		}
 	}
 }
