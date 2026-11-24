@@ -67,7 +67,8 @@ export default class QuestlinePlugin extends Plugin {
 		this.config = this.buildConfig();
 		const appearanceChanged =
 			this.config.progressBarStyle !== previous.progressBarStyle ||
-			this.config.goalProjectsStyle !== previous.goalProjectsStyle;
+			this.config.goalProjectsStyle !== previous.goalProjectsStyle ||
+			this.config.trackedTimeFormat !== previous.trackedTimeFormat;
 		await this.saveSettings();
 
 		if (await this.questline.setConfig(this.config)) {

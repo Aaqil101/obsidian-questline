@@ -411,7 +411,6 @@ interface GoalProjectsState {
 	author: string;
 	sort: ProjectSort;
 	direction: ProjectDirection;
-	timeFormat: TimeFormat;
 }
 
 const DEFAULT_GOAL_PROJECTS_STATE: GoalProjectsState = {
@@ -420,7 +419,6 @@ const DEFAULT_GOAL_PROJECTS_STATE: GoalProjectsState = {
 	author: '',
 	sort: DEFAULT_PROJECT_SORT,
 	direction: DEFAULT_PROJECT_DIRECTION,
-	timeFormat: 'decimal',
 };
 
 interface ProjectOption {
@@ -746,33 +744,6 @@ class GoalProjectsBlock extends QuestlineBlock {
 			direction.setAttr('title', 'Ascending');
 			refresh();
 		});
-
-		if (config.useTimekeep) {
-			const time = controls.createDiv({
-				cls: 'questline-projects-time',
-			});
-			time.createSpan({ text: 'Time:' });
-
-			const buttons: HTMLButtonElement[] = [];
-			for (const format of ['readable', 'decimal'] as const) {
-				const button = time.createEl('button', {
-					cls: 'questline-projects-time-button',
-					text: format === 'readable' ? 'H:M' : 'Decimal',
-					attr: { type: 'button' },
-				});
-				if (this.state.timeFormat === format) {
-					button.addClass('is-active');
-				}
-				button.addEventListener('click', () => {
-					this.state.timeFormat = format;
-					for (const other of buttons) {
-						other.toggleClass('is-active', other === button);
-					}
-					refresh();
-				});
-				buttons.push(button);
-			}
-		}
 	}
 
 	private renderBody(
@@ -802,7 +773,7 @@ class GoalProjectsBlock extends QuestlineBlock {
 				containerEl,
 				projects,
 				config,
-				this.state.timeFormat,
+				config.trackedTimeFormat,
 			);
 
 			if (visible.length === 0) {
@@ -815,7 +786,7 @@ class GoalProjectsBlock extends QuestlineBlock {
 				containerEl,
 				visible,
 				config,
-				this.state.timeFormat,
+				config.trackedTimeFormat,
 				open,
 			);
 
@@ -835,7 +806,7 @@ class GoalProjectsBlock extends QuestlineBlock {
 					visible,
 					true,
 					open,
-					this.state.timeFormat,
+					config.trackedTimeFormat,
 				);
 				return;
 			case 'table':
@@ -843,7 +814,7 @@ class GoalProjectsBlock extends QuestlineBlock {
 					containerEl,
 					visible,
 					config.useTimekeep,
-					this.state.timeFormat,
+					config.trackedTimeFormat,
 					open,
 				);
 				return;
@@ -852,7 +823,7 @@ class GoalProjectsBlock extends QuestlineBlock {
 					containerEl,
 					visible,
 					config.progressBarStyle,
-					this.state.timeFormat,
+					config.trackedTimeFormat,
 					open,
 				);
 				return;
@@ -862,7 +833,7 @@ class GoalProjectsBlock extends QuestlineBlock {
 					visible,
 					false,
 					open,
-					this.state.timeFormat,
+					config.trackedTimeFormat,
 				);
 		}
 	}

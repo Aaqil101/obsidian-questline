@@ -48,6 +48,7 @@ describe('resolveConfig', () => {
 		expect(config.openAfterCreate).toBe(true);
 		expect(config.progressBarStyle).toBe('rainbow');
 		expect(config.goalProjectsStyle).toBe('minimal');
+		expect(config.trackedTimeFormat).toBe('decimal');
 	});
 
 	it('normalizes custom tags and falls back when they are blank', () => {
@@ -181,6 +182,22 @@ describe('resolveConfig', () => {
 		});
 
 		expect(invalid.goalProjectsStyle).toBe('minimal');
+	});
+
+	it('accepts the tracked time formats and falls back otherwise', () => {
+		expect(
+			resolveConfig({ trackedTimeFormat: 'readable' }).trackedTimeFormat,
+		).toBe('readable');
+		expect(
+			resolveConfig({ trackedTimeFormat: 'decimal' }).trackedTimeFormat,
+		).toBe('decimal');
+
+		const invalid = resolveConfig({
+			trackedTimeFormat:
+				'clock' as typeof DEFAULT_SETTINGS.trackedTimeFormat,
+		});
+
+		expect(invalid.trackedTimeFormat).toBe('decimal');
 	});
 
 	it('normalizes template note paths', () => {

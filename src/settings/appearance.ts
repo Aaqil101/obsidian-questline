@@ -1,5 +1,9 @@
 import type { SettingDefinitionGroup } from 'obsidian';
-import type { GoalProjectsStyle, ProgressBarStyle } from './types';
+import type {
+	GoalProjectsStyle,
+	ProgressBarStyle,
+	TrackedTimeFormat,
+} from './types';
 import { renderRow, type SettingsHost } from './ui';
 
 /** Landing group: visual choices that do not affect the index. */
@@ -62,6 +66,25 @@ export function appearanceGroup(host: SettingsHost): SettingDefinitionGroup {
 													: 'minimal';
 								void plugin.updateSettings({
 									goalProjectsStyle,
+								});
+							}),
+					);
+				},
+			),
+			renderRow(
+				'Tracked time format',
+				'Readable shows hours and minutes, such as 2h 30m. Decimal shows 2.50h.',
+				(setting) => {
+					setting.addDropdown((dropdown) =>
+						dropdown
+							.addOption('readable', 'Readable')
+							.addOption('decimal', 'Decimal')
+							.setValue(plugin.settings.trackedTimeFormat)
+							.onChange((value) => {
+								const trackedTimeFormat: TrackedTimeFormat =
+									value === 'readable' ? 'readable' : 'decimal';
+								void plugin.updateSettings({
+									trackedTimeFormat,
 								});
 							}),
 					);

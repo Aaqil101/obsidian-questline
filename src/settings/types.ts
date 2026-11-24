@@ -19,6 +19,9 @@ export type GoalProjectsStyle =
 	| 'cards'
 	| 'dashboard';
 
+/** How tracked hours are displayed. */
+export type TrackedTimeFormat = 'decimal' | 'readable';
+
 /** Whether progress counts every task or only the tasks under one heading. */
 export type TaskScopeMode = 'all' | 'heading';
 
@@ -45,6 +48,7 @@ export interface QuestlineSettings {
 	openAfterCreate: boolean;
 	progressBarStyle: ProgressBarStyle;
 	goalProjectsStyle: GoalProjectsStyle;
+	trackedTimeFormat: TrackedTimeFormat;
 }
 
 export const DEFAULT_GOAL_CATEGORIES = [
@@ -92,6 +96,7 @@ export const DEFAULT_SETTINGS: QuestlineSettings = {
 	openAfterCreate: true,
 	progressBarStyle: 'rainbow',
 	goalProjectsStyle: 'minimal',
+	trackedTimeFormat: 'decimal',
 };
 
 /**
@@ -117,6 +122,7 @@ export interface QuestlineConfig {
 	openAfterCreate: boolean;
 	progressBarStyle: ProgressBarStyle;
 	goalProjectsStyle: GoalProjectsStyle;
+	trackedTimeFormat: TrackedTimeFormat;
 }
 
 export type FolderKind = 'folder' | 'file' | 'missing';
@@ -214,6 +220,12 @@ function cleanGoalProjectsStyle(value: unknown): GoalProjectsStyle {
 		: DEFAULT_SETTINGS.goalProjectsStyle;
 }
 
+function cleanTrackedTimeFormat(value: unknown): TrackedTimeFormat {
+	return value === 'readable' || value === 'decimal'
+		? value
+		: DEFAULT_SETTINGS.trackedTimeFormat;
+}
+
 function cleanTaskScope(mode: unknown, heading: unknown): TaskScope {
 	const name = typeof heading === 'string' ? heading.trim() : '';
 	if (mode !== 'heading' || !name) return ALL_TASKS;
@@ -295,6 +307,7 @@ export function resolveConfig(
 		),
 		progressBarStyle: cleanProgressBarStyle(stored.progressBarStyle),
 		goalProjectsStyle: cleanGoalProjectsStyle(stored.goalProjectsStyle),
+		trackedTimeFormat: cleanTrackedTimeFormat(stored.trackedTimeFormat),
 	};
 }
 

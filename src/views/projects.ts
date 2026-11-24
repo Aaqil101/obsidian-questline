@@ -1,4 +1,5 @@
 /** Filtering, sorting, and display helpers for the goal-projects block. */
+import type { TrackedTimeFormat } from '../settings/types';
 import type { GoalProjectItem } from './model';
 
 export type ProjectSort =
@@ -10,7 +11,7 @@ export type ProjectSort =
 	| 'hours';
 
 export type ProjectDirection = 'asc' | 'desc';
-export type TimeFormat = 'decimal' | 'readable';
+export type TimeFormat = TrackedTimeFormat;
 
 export interface ProjectFilters {
 	search: string;
