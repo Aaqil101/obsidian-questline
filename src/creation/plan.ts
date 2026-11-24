@@ -52,8 +52,6 @@ export interface GoalDraft {
 	templatePath: string;
 	/** Append a live goal-progress block to the new goal body. */
 	includeProgress: boolean;
-	/** Append an empty timekeep block to the new goal body. */
-	includeTimekeep: boolean;
 }
 
 export interface ProjectGoalLink {
@@ -332,12 +330,9 @@ export function planGoal(
 		values,
 		now,
 	});
-	const progressBody = draft.includeProgress
+	const body = draft.includeProgress
 		? withGoalProgressBlock(composed.body)
 		: composed.body;
-	const body = draft.includeTimekeep
-		? withTimekeepBlock(progressBody)
-		: progressBody;
 
 	return {
 		requestedPath,

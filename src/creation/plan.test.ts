@@ -90,7 +90,6 @@ describe('planGoal', () => {
 				template: 'custom',
 				templatePath: '',
 				includeProgress: true,
-				includeTimekeep: false,
 			},
 			context(),
 			{ goal: null, project: null },
@@ -127,7 +126,6 @@ describe('planGoal', () => {
 				template: 'global',
 				templatePath: '',
 				includeProgress: false,
-				includeTimekeep: false,
 			},
 			context(),
 			{ goal: null, project: null },
@@ -135,27 +133,6 @@ describe('planGoal', () => {
 
 		expect(plan.note.body).toBe(BUILTIN_GOAL.body.trim());
 		expect(plan.note.body).not.toContain('goal-progress');
-	});
-
-	it('adds a timekeep block to a goal when asked', () => {
-		const plan = planGoal(
-			{
-				title: 'Learn Python',
-				category: 'Learning',
-				reason: 'Because',
-				timespan: '6 Months',
-				folder: 'goals',
-				template: 'global',
-				templatePath: '',
-				includeProgress: false,
-				includeTimekeep: true,
-			},
-			context(),
-			{ goal: null, project: null },
-		);
-
-		expect(plan.note.body).toContain('```timekeep');
-		expect(plan.note.body).toContain('{"entries":[]}');
 	});
 
 	it('uses the global project template to seed a custom one', () => {
@@ -169,7 +146,6 @@ describe('planGoal', () => {
 				template: 'custom',
 				templatePath: '',
 				includeProgress: true,
-				includeTimekeep: false,
 			},
 			context(),
 			{
@@ -201,7 +177,6 @@ describe('planGoal', () => {
 				template: 'global',
 				templatePath: '',
 				includeProgress: true,
-				includeTimekeep: false,
 			},
 			context(),
 			{ goal: null, project: null },
@@ -223,7 +198,6 @@ describe('planGoal', () => {
 				template: 'custom',
 				templatePath: '',
 				includeProgress: true,
-				includeTimekeep: false,
 			},
 			context(['goals/2026-11-22 - Collision.md']),
 			{ goal: null, project: null },
@@ -246,7 +220,6 @@ describe('planGoal', () => {
 				template: 'existing',
 				templatePath: 'templates/Shared project template.md',
 				includeProgress: true,
-				includeTimekeep: false,
 			},
 			context(['templates/Shared project template.md']),
 			{ goal: null, project: null },
@@ -270,7 +243,6 @@ describe('planGoal', () => {
 					template: 'existing',
 					templatePath: '',
 					includeProgress: true,
-					includeTimekeep: false,
 				},
 				context(),
 				{ goal: null, project: null },

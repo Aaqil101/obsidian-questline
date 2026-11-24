@@ -10,7 +10,6 @@ import {
 import { attachFolderSuggest, FolderPickModal } from '../settings/folderPicker';
 import type { QuestlineConfig } from '../settings/types';
 import { findTemplateFile } from '../templates/notes';
-import { isTimekeepInstalled } from '../timekeep/timekeep';
 import type { GoalDraft, GoalTemplateMode } from './plan';
 import { ValueSuggest } from './suggest';
 import {
@@ -56,8 +55,6 @@ export class GoalModal extends Modal {
 		let templateMode: GoalTemplateMode = 'custom';
 		let existingTemplateRow: Setting | null = null;
 		let includeProgress = true;
-		let includeTimekeep = false;
-		const timekeepAvailable = isTimekeepInstalled(this.app);
 
 		const titleSetting = new Setting(contentEl)
 			.setName('Title')
@@ -125,17 +122,6 @@ export class GoalModal extends Modal {
 				}),
 			);
 
-		if (timekeepAvailable) {
-			new Setting(contentEl)
-				.setName('Timekeep block')
-				.setDesc('Add an empty timekeep block to the new note.')
-				.addToggle((toggle) =>
-					toggle.setValue(false).onChange((value) => {
-						includeTimekeep = value;
-					}),
-				);
-		}
-
 		new Setting(contentEl)
 			.setName('Project template')
 			.setDesc(
@@ -194,7 +180,6 @@ export class GoalModal extends Modal {
 							inputs,
 							templateMode,
 							includeProgress,
-							includeTimekeep,
 						),
 					),
 			);
@@ -210,7 +195,6 @@ export class GoalModal extends Modal {
 		inputs: GoalInputs,
 		mode: GoalTemplateMode,
 		includeProgress: boolean,
-		includeTimekeep: boolean,
 	): void {
 		const draft: GoalDraft = {
 			title: inputs.title?.getValue() ?? '',
@@ -221,7 +205,6 @@ export class GoalModal extends Modal {
 			template: mode,
 			templatePath: '',
 			includeProgress,
-			includeTimekeep,
 		};
 
 		const problem = validateGoal(draft);
