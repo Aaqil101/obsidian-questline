@@ -415,3 +415,647 @@
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 }
+
+/*
+ * Dashboard view. A hero panel and stat tiles carry the overview; goals and
+ * projects are cards, and attention items sit in their own tinted panel.
+ */
+
+.questline-dashboard {
+	max-width: 1440px;
+	margin-inline: auto;
+	padding-bottom: 32px;
+}
+
+/* Hero */
+
+.questline-dashboard-hero {
+	position: relative;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 4px 0 16px;
+	padding: 16px 18px;
+	overflow: hidden;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-l);
+	background:
+		radial-gradient(
+			circle at top right,
+			var(--background-modifier-hover),
+			transparent 55%
+		),
+		linear-gradient(
+			135deg,
+			var(--background-secondary),
+			var(--background-primary)
+		);
+}
+
+.questline-dashboard-hero-main {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-width: 0;
+}
+
+.questline-dashboard-hero-mark {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	width: 38px;
+	height: 38px;
+	border-radius: 12px;
+	background: linear-gradient(135deg, var(--color-red), var(--color-purple));
+	box-shadow: 0 6px 16px rgb(132 94 247 / 25%);
+	color: #fff;
+}
+
+.questline-dashboard-hero-mark svg {
+	width: 20px;
+	height: 20px;
+}
+
+.questline-dashboard-title {
+	margin: 0;
+	font-size: var(--font-ui-large);
+	font-weight: var(--font-bold);
+	line-height: 1.2;
+}
+
+.questline-dashboard-hero-summary {
+	margin: 3px 0 0;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.questline-dashboard-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.questline-dashboard-action {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background-color: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+	transition:
+		background-color 120ms ease,
+		border-color 120ms ease;
+}
+
+.questline-dashboard-action:hover {
+	border-color: var(--background-modifier-border-hover);
+	background-color: var(--background-modifier-hover);
+}
+
+.questline-dashboard-action.mod-cta {
+	border-color: transparent;
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.questline-dashboard-action.mod-cta:hover {
+	background-color: var(--interactive-accent-hover);
+}
+
+.questline-dashboard-action-icon {
+	display: inline-flex;
+}
+
+.questline-dashboard-action-icon svg {
+	width: 15px;
+	height: 15px;
+}
+
+/* Stat tiles */
+
+.questline-dashboard-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+	gap: 10px;
+	margin-bottom: 6px;
+}
+
+.questline-dashboard-stat {
+	--questline-stat-color: var(--text-muted);
+
+	position: relative;
+	overflow: hidden;
+	padding: 10px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-secondary);
+}
+
+.questline-dashboard-stat--goals {
+	--questline-stat-color: var(--color-purple);
+}
+
+.questline-dashboard-stat--projects {
+	--questline-stat-color: var(--color-blue);
+}
+
+.questline-dashboard-stat--in-progress {
+	--questline-stat-color: var(--color-yellow);
+}
+
+.questline-dashboard-stat--completed {
+	--questline-stat-color: var(--color-green);
+}
+
+.questline-dashboard-stat--avg-progress {
+	--questline-stat-color: var(--color-cyan);
+}
+
+.questline-dashboard-stat--tracked-time {
+	--questline-stat-color: var(--color-orange);
+}
+
+.questline-dashboard-stat-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	margin-bottom: 8px;
+	border-radius: 7px;
+	background-color: var(--background-modifier-hover);
+	color: var(--questline-stat-color);
+}
+
+.questline-dashboard-stat-icon svg {
+	width: 15px;
+	height: 15px;
+}
+
+.questline-dashboard-stat-value {
+	font-size: var(--font-ui-large);
+	font-weight: var(--font-bold);
+	line-height: 1.1;
+	font-variant-numeric: tabular-nums;
+}
+
+.questline-dashboard-stat-label {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+/* Sections */
+
+.questline-dashboard-section {
+	margin-top: 20px;
+}
+
+.questline-dashboard-section-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.questline-dashboard-section-title {
+	display: flex;
+	align-items: center;
+	margin: 0;
+	font-size: var(--font-ui-medium);
+}
+
+.questline-dashboard-section-title::before {
+	content: '';
+	width: 3px;
+	height: 15px;
+	margin-right: 8px;
+	border-radius: 2px;
+	background: var(--interactive-accent);
+}
+
+.questline-dashboard-count {
+	padding: 0 7px;
+	border-radius: 999px;
+	background-color: var(--background-modifier-hover);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.7;
+}
+
+/* Category groups */
+
+.questline-dashboard-category {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	margin: 14px 0 8px;
+}
+
+.questline-dashboard-category-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--questline-cat, var(--text-muted));
+	box-shadow: 0 0 0 3px
+		color-mix(
+			in srgb,
+			var(--questline-cat, var(--text-muted)) 22%,
+			transparent
+		);
+}
+
+.questline-dashboard-category-title {
+	margin: 0;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-semibold);
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+
+/* Category palette; the hash picks one and the theme supplies the color. */
+.questline-dashboard-cat-0 {
+	--questline-cat: var(--color-red);
+}
+
+.questline-dashboard-cat-1 {
+	--questline-cat: var(--color-orange);
+}
+
+.questline-dashboard-cat-2 {
+	--questline-cat: var(--color-yellow);
+}
+
+.questline-dashboard-cat-3 {
+	--questline-cat: var(--color-green);
+}
+
+.questline-dashboard-cat-4 {
+	--questline-cat: var(--color-cyan);
+}
+
+.questline-dashboard-cat-5 {
+	--questline-cat: var(--color-blue);
+}
+
+.questline-dashboard-cat-6 {
+	--questline-cat: var(--color-purple);
+}
+
+.questline-dashboard-cat-7 {
+	--questline-cat: var(--color-pink);
+}
+
+.questline-dashboard-cat-none {
+	--questline-cat: var(--text-faint);
+}
+
+/* Cards */
+
+.questline-dashboard-cards,
+.questline-dashboard-projects {
+	display: grid;
+	gap: 10px;
+}
+
+.questline-dashboard-cards {
+	grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+}
+
+.questline-dashboard-projects {
+	grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+}
+
+@media (min-width: 1100px) {
+	.questline-dashboard-cards {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+.questline-dashboard-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 12px 14px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-secondary);
+	color: var(--text-normal);
+}
+
+.questline-dashboard-card.internal-link {
+	text-decoration: none;
+}
+
+.questline-dashboard-card.internal-link:hover {
+	text-decoration: none;
+}
+
+.questline-dashboard-card:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 2px;
+}
+
+.questline-dashboard-project-card {
+	cursor: pointer;
+}
+
+.questline-dashboard-card-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 4px 8px;
+}
+
+.questline-dashboard-card-title {
+	font-size: var(--font-ui-medium);
+	font-weight: var(--font-semibold);
+	overflow-wrap: anywhere;
+}
+
+.questline-dashboard-project-card .questline-dashboard-card-title {
+	color: var(--link-color);
+}
+
+/* Due and status pills */
+
+.questline-dashboard-due {
+	padding: 1px 8px;
+	border-radius: 999px;
+	background-color: var(--background-modifier-hover);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	white-space: nowrap;
+}
+
+.questline-dashboard-due--soon,
+.questline-dashboard-due--today {
+	background-color: var(--background-modifier-hover);
+	background-color: color-mix(
+		in srgb,
+		var(--color-yellow) 16%,
+		transparent
+	);
+	color: var(--text-warning);
+}
+
+.questline-dashboard-due--overdue {
+	background-color: var(--background-modifier-error);
+	color: var(--text-error);
+}
+
+.questline-dashboard-status {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 1px 8px;
+	border-radius: 999px;
+	background-color: var(--background-modifier-hover);
+	background-color: color-mix(
+		in srgb,
+		var(--questline-status, var(--text-muted)) 14%,
+		transparent
+	);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	white-space: nowrap;
+}
+
+.questline-dashboard-status::before {
+	content: '';
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--questline-status, var(--text-faint));
+}
+
+.questline-dashboard-status--todo {
+	--questline-status: var(--color-blue);
+}
+
+.questline-dashboard-status--in-progress {
+	--questline-status: var(--color-yellow);
+}
+
+.questline-dashboard-status--completed {
+	--questline-status: var(--color-green);
+}
+
+.questline-dashboard-status--on-hold {
+	--questline-status: var(--color-orange);
+}
+
+.questline-dashboard-status--waiting {
+	--questline-status: var(--color-cyan);
+}
+
+.questline-dashboard-status--discarded {
+	--questline-status: var(--color-red);
+}
+
+/* Card details */
+
+.questline-dashboard-subtitle {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	overflow-wrap: anywhere;
+}
+
+.questline-dashboard-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 12px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.questline-dashboard-meta-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+}
+
+.questline-dashboard-meta-icon {
+	display: inline-flex;
+	color: var(--text-faint);
+}
+
+.questline-dashboard-meta-icon svg {
+	width: 13px;
+	height: 13px;
+}
+
+.questline-dashboard-goal-link {
+	color: var(--link-color);
+	text-decoration: none;
+}
+
+.questline-dashboard-goal-link:hover {
+	text-decoration: underline;
+}
+
+.questline-dashboard-card .questline-progress-row {
+	gap: 8px;
+}
+
+.questline-dashboard-card .questline-progress {
+	height: 7px;
+}
+
+.questline-dashboard-card .questline-percent {
+	min-width: 0;
+	padding: 1px 7px;
+	border-radius: 999px;
+	background-color: var(--background-modifier-hover);
+	font-size: var(--font-ui-smaller);
+}
+
+/* Attention panel */
+
+.questline-dashboard-attention {
+	margin-top: 20px;
+	padding: 12px 14px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-secondary);
+}
+
+.questline-dashboard-attention-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 6px;
+}
+
+.questline-dashboard-attention-icon {
+	display: inline-flex;
+	color: var(--color-orange);
+}
+
+.questline-dashboard-attention--urgent .questline-dashboard-attention-icon {
+	color: var(--color-red);
+}
+
+.questline-dashboard-attention-icon svg {
+	width: 16px;
+	height: 16px;
+}
+
+.questline-dashboard-attention-title {
+	font-weight: var(--font-semibold);
+}
+
+/* Attention rows reuse the shared row shell. */
+.questline-dashboard-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.questline-dashboard-item {
+	margin: 0;
+}
+
+.questline-dashboard-row {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 10px 12px;
+	border-radius: var(--radius-m);
+	color: var(--text-normal);
+}
+
+.questline-dashboard-row.internal-link {
+	text-decoration: none;
+}
+
+.questline-dashboard-row.internal-link:hover {
+	text-decoration: none;
+}
+
+.questline-dashboard-row:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.questline-dashboard-row:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 2px;
+}
+
+.questline-dashboard-attention-row {
+	padding: 6px 8px;
+}
+
+.questline-dashboard-row-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 8px;
+}
+
+.questline-dashboard-row-title {
+	font-weight: var(--font-medium);
+	overflow-wrap: anywhere;
+}
+
+.questline-dashboard-badge {
+	padding: 1px 8px;
+	border-radius: 999px;
+	background-color: var(--background-modifier-hover);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	white-space: nowrap;
+}
+
+.questline-dashboard-attention-row .questline-dashboard-badge {
+	white-space: normal;
+}
+
+.questline-dashboard-badge--urgent {
+	background-color: var(--background-modifier-error);
+	color: var(--text-error);
+}
+
+.questline-dashboard-badge--warning {
+	color: var(--text-warning);
+}
+
+/* Empty state */
+
+.questline-dashboard > .questline-empty {
+	padding: 28px 16px;
+	border: 1px dashed var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	text-align: center;
+}
+
+/* Narrow panes */
+
+@media (max-width: 600px) {
+	.questline-dashboard-hero {
+		align-items: flex-start;
+	}
+
+	.questline-dashboard-actions {
+		width: 100%;
+	}
+
+	.questline-dashboard-action {
+		flex: 1 1 auto;
+		justify-content: center;
+	}
+
+	.questline-dashboard-stats {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}

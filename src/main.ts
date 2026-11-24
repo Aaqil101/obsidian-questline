@@ -12,6 +12,7 @@ import {
 } from './settings';
 import { registerTemplateCommands } from './templates/commands';
 import { registerCreationCommands } from './creation/commands';
+import { registerDashboardView } from './views/dashboard';
 import { registerProgressBlocks } from './views/blocks';
 import {
 	createStarterTemplates as writeStarterTemplates,
@@ -38,6 +39,7 @@ export default class QuestlinePlugin extends Plugin {
 		registerTemplateCommands(this);
 		registerCreationCommands(this);
 		registerProgressBlocks(this);
+		registerDashboardView(this);
 		this.registerIndexEvents();
 		this.app.workspace.onLayoutReady(() => {
 			void this.questline.refresh();
@@ -68,7 +70,9 @@ export default class QuestlinePlugin extends Plugin {
 		const appearanceChanged =
 			this.config.progressBarStyle !== previous.progressBarStyle ||
 			this.config.goalProjectsStyle !== previous.goalProjectsStyle ||
-			this.config.trackedTimeFormat !== previous.trackedTimeFormat;
+			this.config.trackedTimeFormat !== previous.trackedTimeFormat ||
+			this.config.useTimekeep !== previous.useTimekeep ||
+			!sameList(this.config.goalCategories, previous.goalCategories);
 		await this.saveSettings();
 
 		if (await this.questline.setConfig(this.config)) {
@@ -135,4 +139,12 @@ export default class QuestlinePlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+}
+
+/** Ordered list equality, for settings that only change how views paint. */
+function sameList(left: readonly string[], right: readonly string[]): boolean {
+	return (
+		left.length === right.length &&
+		left.every((value, index) => value === right[index])
+	);
 }

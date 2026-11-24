@@ -32,13 +32,13 @@ export function registerCreationCommands(plugin: QuestlinePlugin): void {
 	registerGoalTemplateCommands(plugin);
 }
 
-function openGoalModal(plugin: QuestlinePlugin): void {
+export function openGoalModal(plugin: QuestlinePlugin): void {
 	new GoalModal(plugin.app, plugin.getConfig(), (draft) => {
 		void createGoal(plugin, draft);
 	}).open();
 }
 
-function openProjectModal(plugin: QuestlinePlugin): void {
+export function openProjectModal(plugin: QuestlinePlugin): void {
 	new ProjectModal(
 		plugin.app,
 		plugin.getConfig(),

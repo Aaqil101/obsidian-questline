@@ -3,14 +3,9 @@
  * index refreshes, so a checkbox or frontmatter change repaints in place.
  * The same processors run in Reading view and Live Preview.
  */
-import {
-	MarkdownRenderChild,
-	MarkdownView,
-	type WorkspaceLeaf,
-} from 'obsidian';
+import { MarkdownRenderChild } from 'obsidian';
 import type QuestlinePlugin from '../main';
 import type { ProgressBarStyle, QuestlineConfig } from '../settings/types';
-import { thresholdStage } from './bar';
 import {
 	describeDue,
 	formatHours,
@@ -19,6 +14,7 @@ import {
 	projectProgressView,
 	type GoalProjectItem,
 } from './model';
+import { revealOrOpen } from './open';
 import {
 	DEFAULT_PROJECT_DIRECTION,
 	DEFAULT_PROJECT_SORT,
@@ -34,6 +30,13 @@ import {
 	type ProjectSort,
 	type TimeFormat,
 } from './projects';
+import {
+	countLabel,
+	renderEmpty,
+	renderProgressRow,
+	renderStats,
+	type Stat,
+} from './render';
 
 const NOT_A_GOAL =
 	'This note is not a goal. Add the goal tag to show progress.';
@@ -71,108 +74,11 @@ abstract class QuestlineBlock extends MarkdownRenderChild {
 
 	protected abstract paintBlock(containerEl: HTMLElement): void;
 
-	/** Reveal an open note tab, or open the note in a new tab. */
-	protected revealOrOpen(path: string, event: MouseEvent): void {
-		event.preventDefault();
-
-		const leaf = this.findLeaf(path);
-		if (leaf) {
-			void this.plugin.app.workspace.revealLeaf(leaf);
-
-			return;
-		}
-
-		void this.plugin.app.workspace.openLinkText(path, this.sourcePath, 'tab');
-	}
-
-	private findLeaf(path: string): WorkspaceLeaf | null {
-		for (const leaf of this.plugin.app.workspace.getLeavesOfType('markdown')) {
-			const view = leaf.view;
-			if (view instanceof MarkdownView && view.file?.path === path) {
-				return leaf;
-			}
-
-			const state = leaf.getViewState();
-			if (state.type === 'markdown' && state.state?.file === path) {
-				return leaf;
-			}
-		}
-
-		return null;
-	}
-
 	private paint(): void {
 		this.containerEl.empty();
 		this.containerEl.addClass('questline-block');
 		this.paintBlock(this.containerEl);
 	}
-}
-
-function renderProgressRow(
-	containerEl: HTMLElement,
-	percent: number,
-	label: string,
-	style: ProgressBarStyle,
-): void {
-	const row = containerEl.createDiv({ cls: 'questline-progress-row' });
-	const bar = row.createDiv({
-		cls: 'questline-progress',
-		attr: {
-			role: 'progressbar',
-			'aria-valuemin': '0',
-			'aria-valuemax': '100',
-			'aria-valuenow': String(percent),
-			'aria-label': label,
-		},
-	});
-	const fill = bar.createDiv({ cls: 'questline-progress-fill' });
-	if (style === 'threshold') {
-		fill.addClass(
-			`questline-progress-fill--threshold-${thresholdStage(percent)}`,
-		);
-	} else {
-		fill.addClass(`questline-progress-fill--${style}`);
-	}
-	fill.setCssStyles({ width: `${Math.max(0, Math.min(100, percent))}%` });
-
-	row.createSpan({ cls: 'questline-percent', text: `${percent}%` });
-}
-
-type Stat = string | { text: string; path: string };
-
-function renderStats(
-	containerEl: HTMLElement,
-	stats: readonly Stat[],
-	open?: (path: string, event: MouseEvent) => void,
-): void {
-	const row = containerEl.createDiv({ cls: 'questline-stats' });
-
-	for (const stat of stats) {
-		if (typeof stat === 'string') {
-			row.createSpan({ cls: 'questline-stat', text: stat });
-			continue;
-		}
-
-		const span = row.createSpan({ cls: 'questline-stat' });
-		const link = span.createEl('a', {
-			cls: 'internal-link',
-			text: stat.text,
-		});
-		link.setAttr('href', stat.path);
-		if (open) {
-			link.addEventListener('click', (event) => {
-				open(stat.path, event);
-			});
-		}
-	}
-}
-
-function renderEmpty(containerEl: HTMLElement, text: string): void {
-	containerEl.createDiv({ cls: 'questline-empty', text });
-}
-
-function countLabel(count: number, singular: string, plural: string): string {
-	return `${count} ${count === 1 ? singular : plural}`;
 }
 
 class GoalProgressBlock extends QuestlineBlock {
@@ -251,7 +157,7 @@ class ProjectProgressBlock extends QuestlineBlock {
 		}
 
 		renderStats(containerEl, stats, (path, event) => {
-			this.revealOrOpen(path, event);
+			revealOrOpen(this.plugin.app, path, event, this.sourcePath);
 		});
 	}
 }
@@ -765,7 +671,7 @@ class GoalProjectsBlock extends QuestlineBlock {
 			config.projectStatuses,
 		);
 		const open: OpenProject = (path, event) => {
-			this.revealOrOpen(path, event);
+			revealOrOpen(this.plugin.app, path, event, this.sourcePath);
 		};
 
 		if (config.goalProjectsStyle === 'dashboard') {
