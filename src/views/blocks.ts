@@ -3,7 +3,11 @@
  * index refreshes, so a checkbox or frontmatter change repaints in place.
  * The same processors run in Reading view and Live Preview.
  */
-import { MarkdownRenderChild } from 'obsidian';
+import {
+	MarkdownRenderChild,
+	MarkdownView,
+	type WorkspaceLeaf,
+} from 'obsidian';
 import type QuestlinePlugin from '../main';
 import type { ProgressBarStyle } from '../settings/types';
 import { thresholdStage } from './bar';
@@ -56,6 +60,36 @@ abstract class QuestlineBlock extends MarkdownRenderChild {
 			this.sourcePath,
 			false,
 		);
+	}
+
+	/** Reveal an open goal tab, or open the goal in a new tab. */
+	protected openGoal(path: string, event: MouseEvent): void {
+		event.preventDefault();
+
+		const leaf = this.findGoalLeaf(path);
+		if (leaf) {
+			void this.plugin.app.workspace.revealLeaf(leaf);
+
+			return;
+		}
+
+		void this.plugin.app.workspace.openLinkText(path, this.sourcePath, 'tab');
+	}
+
+	private findGoalLeaf(path: string): WorkspaceLeaf | null {
+		for (const leaf of this.plugin.app.workspace.getLeavesOfType('markdown')) {
+			const view = leaf.view;
+			if (view instanceof MarkdownView && view.file?.path === path) {
+				return leaf;
+			}
+
+			const state = leaf.getViewState();
+			if (state.type === 'markdown' && state.state?.file === path) {
+				return leaf;
+			}
+		}
+
+		return null;
 	}
 
 	private paint(): void {
@@ -208,7 +242,7 @@ class ProjectProgressBlock extends QuestlineBlock {
 		}
 
 		renderStats(containerEl, stats, (path, event) => {
-			this.openPath(path, event);
+			this.openGoal(path, event);
 		});
 	}
 }
