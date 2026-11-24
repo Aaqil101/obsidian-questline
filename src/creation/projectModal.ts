@@ -105,8 +105,8 @@ export class ProjectModal extends Modal {
 		);
 		let goalButton: ButtonComponent | null = null;
 		let includeProgress = true;
-		let includeTimekeep = false;
 		const timekeepAvailable = isTimekeepInstalled(this.app);
+		let includeTimekeep = timekeepAvailable;
 
 		const updateTemplateDefault = (): void => {
 			const current = inputs.template?.getValue() ?? '';
@@ -224,7 +224,7 @@ export class ProjectModal extends Modal {
 				.setName('Timekeep block')
 				.setDesc('Add an empty timekeep block to the new note.')
 				.addToggle((toggle) =>
-					toggle.setValue(false).onChange((value) => {
+					toggle.setValue(includeTimekeep).onChange((value) => {
 						includeTimekeep = value;
 					}),
 				);

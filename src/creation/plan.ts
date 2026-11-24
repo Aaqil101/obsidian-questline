@@ -7,6 +7,15 @@ import { TEMPLATE_TYPE } from '../constants';
 import { withoutDate } from '../index/names';
 import type { QuestlineConfig } from '../settings/types';
 import { normalizeFolder } from '../settings/types';
+import {
+	GOAL_PROGRESS_BLOCK,
+	GOAL_PROGRESS_MARKER,
+	PROJECT_PROGRESS_BLOCK,
+	PROJECT_PROGRESS_MARKER,
+	TIMEKEEP_BLOCK,
+	TIMEKEEP_MARKER,
+	projectTemplateBody,
+} from '../templates/blocks';
 import { BUILTIN_GOAL, BUILTIN_PROJECT } from '../templates/builtin';
 import {
 	composeNote,
@@ -25,14 +34,9 @@ const CONTROL = /\p{Cc}/gu;
 
 const MAX_COLLISIONS = 1000;
 
-/** Code blocks creation can append to a new note. */
-const GOAL_PROGRESS_BLOCK = '```goal-progress\n```';
-const PROJECT_PROGRESS_BLOCK = '```project-progress\n```';
-const TIMEKEEP_BLOCK = '```timekeep\n{"entries":[]}\n```';
-
-const GOAL_PROGRESS_MARKER = /^[ \t]*(?:```|~~~)\s*goal-progress\b/im;
-const PROJECT_PROGRESS_MARKER = /^[ \t]*(?:```|~~~)\s*project-progress\b/im;
-const TIMEKEEP_MARKER = /^[ \t]*(?:```|~~~)\s*timekeep\b/im;
+/** The goal-projects block, used only by goal creation. */
+const GOAL_PROJECTS_BLOCK = '```goal-projects\n```';
+const GOAL_PROJECTS_MARKER = /^[ \t]*(?:```|~~~)\s*goal-projects\b/im;
 
 /** `{{goal_name}}` and one adjacent separator, for standalone projects. */
 const GOAL_NAME_BEFORE = /\s*[-–—|]\s*\{\{\s*goal_name\s*\}\}/gi;
@@ -52,6 +56,8 @@ export interface GoalDraft {
 	templatePath: string;
 	/** Append a live goal-progress block to the new goal body. */
 	includeProgress: boolean;
+	/** Append a live goal-projects block to the new goal body. */
+	includeProjects: boolean;
 }
 
 export interface ProjectGoalLink {
@@ -203,6 +209,11 @@ export function withGoalProgressBlock(body: string): string {
 	return appendBlock(body, GOAL_PROGRESS_BLOCK, GOAL_PROGRESS_MARKER);
 }
 
+/** Append the live goal-projects block. */
+export function withGoalProjectsBlock(body: string): string {
+	return appendBlock(body, GOAL_PROJECTS_BLOCK, GOAL_PROJECTS_MARKER);
+}
+
 /** Append the live project-progress block. */
 export function withProjectProgressBlock(body: string): string {
 	return appendBlock(body, PROJECT_PROGRESS_BLOCK, PROJECT_PROGRESS_MARKER);
@@ -330,9 +341,12 @@ export function planGoal(
 		values,
 		now,
 	});
-	const body = draft.includeProgress
+	const progressBody = draft.includeProgress
 		? withGoalProgressBlock(composed.body)
 		: composed.body;
+	const body = draft.includeProjects
+		? withGoalProjectsBlock(progressBody)
+		: progressBody;
 
 	return {
 		requestedPath,
@@ -387,7 +401,13 @@ export function planProject(
 	);
 	const composed = composeNote({
 		template: templates.template,
-		fallback: BUILTIN_PROJECT,
+		fallback: {
+			frontmatter: null,
+			body: projectTemplateBody(
+				draft.includeProgress,
+				draft.includeTimekeep,
+			),
+		},
 		core,
 		values,
 		now,

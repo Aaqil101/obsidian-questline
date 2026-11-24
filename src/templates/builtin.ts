@@ -4,6 +4,7 @@
  * marker that keeps them out of the index, ready to edit in the vault.
  */
 import { TEMPLATE_TYPE } from '../constants';
+import { projectTemplateBody } from './blocks';
 import type { TemplateDocument } from './document';
 
 export const BUILTIN_GOAL: TemplateDocument = {
@@ -26,18 +27,7 @@ export const BUILTIN_GOAL: TemplateDocument = {
 
 export const BUILTIN_PROJECT: TemplateDocument = {
 	frontmatter: null,
-	body: `# {{title}}
-
-## Project info
-
-## Thoughts
-
-## Resources
-
-## Tasks
-
--
-`,
+	body: projectTemplateBody(),
 };
 
 const GOAL_HINT = `%%

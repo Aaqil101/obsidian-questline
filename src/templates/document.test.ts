@@ -186,7 +186,13 @@ describe('starter templates', () => {
 			BUILTIN_PROJECT.body.trim(),
 		);
 		expect(starter('Project template').document.body).toContain(
-			'# {{title}}',
+			'## Project info',
+		);
+		expect(starter('Project template').document.body).toContain(
+			'```project-progress',
+		);
+		expect(starter('Project template').document.body).toContain(
+			'```timekeep',
 		);
 	});
 });

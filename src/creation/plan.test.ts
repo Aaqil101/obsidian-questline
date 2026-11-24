@@ -9,6 +9,7 @@ import {
 	planProject,
 	sanitizeName,
 	withGoalProgressBlock,
+	withGoalProjectsBlock,
 	withProjectProgressBlock,
 	withTimekeepBlock,
 	type PlanContext,
@@ -90,6 +91,7 @@ describe('planGoal', () => {
 				template: 'custom',
 				templatePath: '',
 				includeProgress: true,
+				includeProjects: true,
 			},
 			context(),
 			{ goal: null, project: null },
@@ -108,11 +110,18 @@ describe('planGoal', () => {
 			timespan: '6 Months',
 			project_template: '[[templates/Learn Python project template]]',
 		});
-		expect(plan.note.body).toBe(withGoalProgressBlock(BUILTIN_GOAL.body).trim());
+		expect(plan.note.body).toBe(
+			withGoalProjectsBlock(
+				withGoalProgressBlock(BUILTIN_GOAL.body),
+			).trim(),
+		);
 		expect(plan.template?.parts.frontmatter).toEqual({
 			type: 'questline-template',
 		});
-		expect(plan.template?.parts.body).toContain('# {{title}}');
+		expect(plan.template?.parts.body).toContain('## Project info');
+		expect(plan.template?.parts.body).toContain(
+			'```project-progress',
+		);
 	});
 
 	it('omits the progress block when the option is off', () => {
@@ -126,6 +135,7 @@ describe('planGoal', () => {
 				template: 'global',
 				templatePath: '',
 				includeProgress: false,
+				includeProjects: false,
 			},
 			context(),
 			{ goal: null, project: null },
@@ -133,6 +143,7 @@ describe('planGoal', () => {
 
 		expect(plan.note.body).toBe(BUILTIN_GOAL.body.trim());
 		expect(plan.note.body).not.toContain('goal-progress');
+		expect(plan.note.body).not.toContain('goal-projects');
 	});
 
 	it('uses the global project template to seed a custom one', () => {
@@ -146,6 +157,7 @@ describe('planGoal', () => {
 				template: 'custom',
 				templatePath: '',
 				includeProgress: true,
+				includeProjects: true,
 			},
 			context(),
 			{
@@ -177,6 +189,7 @@ describe('planGoal', () => {
 				template: 'global',
 				templatePath: '',
 				includeProgress: true,
+				includeProjects: true,
 			},
 			context(),
 			{ goal: null, project: null },
@@ -198,6 +211,7 @@ describe('planGoal', () => {
 				template: 'custom',
 				templatePath: '',
 				includeProgress: true,
+				includeProjects: true,
 			},
 			context(['goals/2026-11-22 - Collision.md']),
 			{ goal: null, project: null },
@@ -220,6 +234,7 @@ describe('planGoal', () => {
 				template: 'existing',
 				templatePath: 'templates/Shared project template.md',
 				includeProgress: true,
+				includeProjects: true,
 			},
 			context(['templates/Shared project template.md']),
 			{ goal: null, project: null },
@@ -243,6 +258,7 @@ describe('planGoal', () => {
 					template: 'existing',
 					templatePath: '',
 					includeProgress: true,
+					includeProjects: true,
 				},
 				context(),
 				{ goal: null, project: null },
@@ -266,6 +282,20 @@ describe('withGoalProgressBlock', () => {
 
 	it('uses the block as the whole body when the body is empty', () => {
 		expect(withGoalProgressBlock('  \n')).toBe('```goal-progress\n```');
+	});
+});
+
+describe('withGoalProjectsBlock', () => {
+	it('appends the goal projects block', () => {
+		expect(withGoalProjectsBlock('# Goal')).toBe(
+			'# Goal\n\n```goal-projects\n```',
+		);
+	});
+
+	it('does not duplicate an existing goal projects block', () => {
+		const body = '# Goal\n\n```goal-projects\n```';
+
+		expect(withGoalProjectsBlock(body)).toBe(body);
 	});
 });
 
@@ -376,8 +406,8 @@ describe('planProject', () => {
 
 		expect(plan.note.body).toContain('```project-progress');
 		expect(plan.note.body).toContain('```timekeep');
-		expect(plan.note.body.indexOf('project-progress')).toBeLessThan(
-			plan.note.body.indexOf('timekeep'),
+		expect(plan.note.body.indexOf('timekeep')).toBeLessThan(
+			plan.note.body.indexOf('project-progress'),
 		);
 	});
 
