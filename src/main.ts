@@ -5,6 +5,7 @@ import type { QuestlineIndex } from './index/types';
 import {
 	DEFAULT_SETTINGS,
 	QuestlineSettingTab,
+	appearanceChanged,
 	resolveConfig,
 	type FolderKind,
 	type QuestlineConfig,
@@ -67,18 +68,12 @@ export default class QuestlinePlugin extends Plugin {
 		// Rebuild before saving, so a button clicked right after leaving an
 		// input already reads the value that was just typed.
 		this.config = this.buildConfig();
-		const appearanceChanged =
-			this.config.progressBarStyle !== previous.progressBarStyle ||
-			this.config.goalProjectsStyle !== previous.goalProjectsStyle ||
-			this.config.trackedTimeFormat !== previous.trackedTimeFormat ||
-			this.config.useTimekeep !== previous.useTimekeep ||
-			this.config.dashboardStyle !== previous.dashboardStyle ||
-			!sameList(this.config.goalCategories, previous.goalCategories);
+		const onlyAppearanceChanged = appearanceChanged(previous, this.config);
 		await this.saveSettings();
 
 		if (await this.questline.setConfig(this.config)) {
 			this.questline.scheduleRefresh();
-		} else if (appearanceChanged) {
+		} else if (onlyAppearanceChanged) {
 			this.questline.notifyRefresh();
 		}
 	}
@@ -140,12 +135,4 @@ export default class QuestlinePlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
-}
-
-/** Ordered list equality, for settings that only change how views paint. */
-function sameList(left: readonly string[], right: readonly string[]): boolean {
-	return (
-		left.length === right.length &&
-		left.every((value, index) => value === right[index])
-	);
 }

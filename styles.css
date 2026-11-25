@@ -1526,3 +1526,206 @@
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 }
+
+/* Questline tabs */
+
+.questline-tabs {
+	display: flex;
+	gap: 2px;
+	margin: 0 0 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.questline-tab {
+	margin-bottom: -1px;
+	padding: 6px 12px;
+	border: none;
+	border-bottom: 2px solid transparent;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-medium);
+	cursor: pointer;
+}
+
+.questline-tab:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.questline-tab.is-active {
+	border-bottom-color: var(--interactive-accent);
+	color: var(--text-normal);
+}
+
+/* Goals view */
+
+.questline-goals-header-text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.questline-goals-summary {
+	margin: 0;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.questline-goals-controls {
+	margin-top: 0;
+}
+
+.questline-goals-archived {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	cursor: pointer;
+}
+
+.questline-goals-count {
+	margin: 0 0 8px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.questline-goals-body {
+	container-type: inline-size;
+	container-name: questline-goals;
+}
+
+.questline-goals-table {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+}
+
+.questline-goals-row {
+	display: grid;
+	grid-template-columns:
+		minmax(140px, 2.2fr) minmax(90px, 1fr) minmax(120px, 1.6fr)
+		minmax(60px, 0.7fr) minmax(64px, 0.7fr) minmax(120px, 1.4fr);
+	gap: 12px;
+	align-items: center;
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	color: var(--text-normal);
+}
+
+.questline-goals-row.internal-link {
+	text-decoration: none;
+}
+
+.questline-goals-row:last-child {
+	border-bottom: none;
+}
+
+.questline-goals-row:not(.questline-goals-row--header):hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.questline-goals-row--header {
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-semibold);
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+}
+
+.questline-goals-row.is-archived {
+	opacity: 0.65;
+}
+
+.questline-goals-cell {
+	min-width: 0;
+	overflow-wrap: anywhere;
+	font-size: var(--font-ui-small);
+}
+
+.questline-goals-cell--title {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+}
+
+.questline-goals-title {
+	font-weight: var(--font-medium);
+}
+
+.questline-goals-archived-badge {
+	padding: 0 6px;
+	border-radius: var(--radius-s);
+	background-color: var(--background-modifier-border);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.questline-goals-cell--number {
+	font-variant-numeric: tabular-nums;
+}
+
+.questline-goals-cell--due {
+	color: var(--text-muted);
+}
+
+.questline-goals-cell--due.is-overdue {
+	color: var(--text-error);
+}
+
+.questline-goals-cell--progress .questline-progress-row {
+	gap: 6px;
+}
+
+@container questline-goals (max-width: 760px) {
+	.questline-goals-row--header {
+		display: none;
+	}
+
+	.questline-goals-row {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 4px;
+		padding: 10px 12px;
+	}
+
+	.questline-goals-cell {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+	}
+
+	.questline-goals-cell::before {
+		content: attr(data-label);
+		flex: 0 0 72px;
+		color: var(--text-faint);
+		font-size: var(--font-ui-smaller);
+		letter-spacing: 0.03em;
+		text-transform: uppercase;
+	}
+
+	.questline-goals-cell--title::before {
+		content: none;
+	}
+
+	.questline-goals-cell--progress {
+		align-items: center;
+	}
+
+	.questline-goals-cell--progress .questline-progress-row {
+		flex: 1 1 auto;
+	}
+}
+
+/* Goals style: cards */
+
+.questline-goals-cards > .questline-dashboard-category:first-child {
+	margin-top: 4px;
+}

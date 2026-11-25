@@ -2,6 +2,7 @@ import type { SettingDefinitionGroup } from 'obsidian';
 import type {
 	DashboardStyle,
 	GoalProjectsStyle,
+	GoalsStyle,
 	ProgressBarStyle,
 	TrackedTimeFormat,
 } from './types';
@@ -32,6 +33,25 @@ export function appearanceGroup(host: SettingsHost): SettingDefinitionGroup {
 										: 'minimal';
 								void plugin.updateSettings({
 									dashboardStyle,
+								});
+							}),
+					);
+				},
+			),
+			renderRow(
+				'Goals style',
+				'List shows goals in a sortable table. Cards groups goals by category when sorting by category, and otherwise shows a sorted card grid.',
+				(setting) => {
+					setting.addDropdown((dropdown) =>
+						dropdown
+							.addOption('list', 'List')
+							.addOption('cards', 'Cards')
+							.setValue(plugin.settings.goalsStyle)
+							.onChange((value) => {
+								const goalsStyle: GoalsStyle =
+									value === 'cards' ? 'cards' : 'list';
+								void plugin.updateSettings({
+									goalsStyle,
 								});
 							}),
 					);

@@ -3,6 +3,7 @@ import {
 	DEFAULT_GOAL_CATEGORIES,
 	DEFAULT_PROJECT_STATUSES,
 	DEFAULT_SETTINGS,
+	appearanceChanged,
 	describeFolder,
 	normalizeFolder,
 	normalizeTemplate,
@@ -50,6 +51,7 @@ describe('resolveConfig', () => {
 		expect(config.goalProjectsStyle).toBe('minimal');
 		expect(config.trackedTimeFormat).toBe('decimal');
 		expect(config.dashboardStyle).toBe('minimal');
+		expect(config.goalsStyle).toBe('list');
 	});
 
 	it('normalizes custom tags and falls back when they are blank', () => {
@@ -218,6 +220,39 @@ describe('resolveConfig', () => {
 		});
 
 		expect(invalid.dashboardStyle).toBe('minimal');
+	});
+
+	it('accepts the goals styles and falls back otherwise', () => {
+		expect(resolveConfig({ goalsStyle: 'list' }).goalsStyle).toBe('list');
+		expect(resolveConfig({ goalsStyle: 'cards' }).goalsStyle).toBe('cards');
+
+		const invalid = resolveConfig({
+			goalsStyle: 'fancy' as typeof DEFAULT_SETTINGS.goalsStyle,
+		});
+
+		expect(invalid.goalsStyle).toBe('list');
+	});
+
+	it('detects every repaint-only appearance change', () => {
+		const base = resolveConfig(DEFAULT_SETTINGS);
+		const changes = [
+			resolveConfig({ progressBarStyle: 'normal' }),
+			resolveConfig({ goalProjectsStyle: 'dashboard' }),
+			resolveConfig({ trackedTimeFormat: 'readable' }),
+			resolveConfig({ useTimekeep: false }),
+			resolveConfig({ dashboardStyle: 'cards' }),
+			resolveConfig({ goalsStyle: 'cards' }),
+			resolveConfig({ goalCategories: ['Health'] }),
+		];
+
+		for (const next of changes) {
+			expect(appearanceChanged(base, next)).toBe(true);
+		}
+
+		expect(appearanceChanged(base, base)).toBe(false);
+		expect(
+			appearanceChanged(base, resolveConfig({ goalFolder: 'elsewhere' })),
+		).toBe(false);
 	});
 
 	it('normalizes template note paths', () => {

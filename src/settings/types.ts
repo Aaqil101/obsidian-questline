@@ -25,6 +25,9 @@ export type TrackedTimeFormat = 'decimal' | 'readable';
 /** How the dashboard is laid out. */
 export type DashboardStyle = 'minimal' | 'cards' | 'timeline';
 
+/** How the Goals tab lists goals. */
+export type GoalsStyle = 'list' | 'cards';
+
 /** Whether progress counts every task or only the tasks under one heading. */
 export type TaskScopeMode = 'all' | 'heading';
 
@@ -53,6 +56,7 @@ export interface QuestlineSettings {
 	goalProjectsStyle: GoalProjectsStyle;
 	trackedTimeFormat: TrackedTimeFormat;
 	dashboardStyle: DashboardStyle;
+	goalsStyle: GoalsStyle;
 }
 
 export const DEFAULT_GOAL_CATEGORIES = [
@@ -102,6 +106,7 @@ export const DEFAULT_SETTINGS: QuestlineSettings = {
 	goalProjectsStyle: 'minimal',
 	trackedTimeFormat: 'decimal',
 	dashboardStyle: 'minimal',
+	goalsStyle: 'list',
 };
 
 /**
@@ -129,6 +134,7 @@ export interface QuestlineConfig {
 	goalProjectsStyle: GoalProjectsStyle;
 	trackedTimeFormat: TrackedTimeFormat;
 	dashboardStyle: DashboardStyle;
+	goalsStyle: GoalsStyle;
 }
 
 export type FolderKind = 'folder' | 'file' | 'missing';
@@ -240,6 +246,12 @@ function cleanDashboardStyle(value: unknown): DashboardStyle {
 		: DEFAULT_SETTINGS.dashboardStyle;
 }
 
+function cleanGoalsStyle(value: unknown): GoalsStyle {
+	return value === 'list' || value === 'cards'
+		? value
+		: DEFAULT_SETTINGS.goalsStyle;
+}
+
 function cleanTaskScope(mode: unknown, heading: unknown): TaskScope {
 	const name = typeof heading === 'string' ? heading.trim() : '';
 	if (mode !== 'heading' || !name) return ALL_TASKS;
@@ -323,11 +335,41 @@ export function resolveConfig(
 		goalProjectsStyle: cleanGoalProjectsStyle(stored.goalProjectsStyle),
 		trackedTimeFormat: cleanTrackedTimeFormat(stored.trackedTimeFormat),
 		dashboardStyle: cleanDashboardStyle(stored.dashboardStyle),
+		goalsStyle: cleanGoalsStyle(stored.goalsStyle),
 	};
 }
 
 /** Used when the index runs without settings, such as in tests. */
 export const DEFAULT_CONFIG: QuestlineConfig = resolveConfig(DEFAULT_SETTINGS);
+
+/**
+ * True when a config change only affects how open views paint. These settings
+ * never change what the index holds, so views repaint without a rebuild.
+ */
+export function appearanceChanged(
+	previous: QuestlineConfig,
+	next: QuestlineConfig,
+): boolean {
+	return (
+		next.progressBarStyle !== previous.progressBarStyle ||
+		next.goalProjectsStyle !== previous.goalProjectsStyle ||
+		next.trackedTimeFormat !== previous.trackedTimeFormat ||
+		next.useTimekeep !== previous.useTimekeep ||
+		next.dashboardStyle !== previous.dashboardStyle ||
+		next.goalsStyle !== previous.goalsStyle ||
+		!sameStrings(next.goalCategories, previous.goalCategories)
+	);
+}
+
+function sameStrings(
+	left: readonly string[],
+	right: readonly string[],
+): boolean {
+	return (
+		left.length === right.length &&
+		left.every((value, index) => value === right[index])
+	);
+}
 
 /** Human-readable folder state for the settings tab. */
 export function describeFolder(
