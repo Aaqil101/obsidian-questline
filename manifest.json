@@ -6,5 +6,6 @@
 	"description": "Track goals and projects in plain Markdown, with task progress rolling up from projects to goals.",
 	"author": "Aaqil",
 	"authorUrl": "https://github.com/Aaqil101",
+	"fundingUrl": "https://github.com/sponsors/Aaqil101",
 	"isDesktopOnly": false
 }
