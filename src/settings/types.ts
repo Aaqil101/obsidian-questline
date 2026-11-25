@@ -28,6 +28,9 @@ export type DashboardStyle = 'minimal' | 'cards' | 'timeline';
 /** How the Goals tab lists goals. */
 export type GoalsStyle = 'list' | 'cards';
 
+/** How the Projects tab lists projects. */
+export type ProjectsStyle = 'table' | 'cards';
+
 /** Whether progress counts every task or only the tasks under one heading. */
 export type TaskScopeMode = 'all' | 'heading';
 
@@ -57,6 +60,7 @@ export interface QuestlineSettings {
 	trackedTimeFormat: TrackedTimeFormat;
 	dashboardStyle: DashboardStyle;
 	goalsStyle: GoalsStyle;
+	projectsStyle: ProjectsStyle;
 }
 
 export const DEFAULT_GOAL_CATEGORIES = [
@@ -107,6 +111,7 @@ export const DEFAULT_SETTINGS: QuestlineSettings = {
 	trackedTimeFormat: 'decimal',
 	dashboardStyle: 'minimal',
 	goalsStyle: 'list',
+	projectsStyle: 'table',
 };
 
 /**
@@ -135,6 +140,7 @@ export interface QuestlineConfig {
 	trackedTimeFormat: TrackedTimeFormat;
 	dashboardStyle: DashboardStyle;
 	goalsStyle: GoalsStyle;
+	projectsStyle: ProjectsStyle;
 }
 
 export type FolderKind = 'folder' | 'file' | 'missing';
@@ -252,6 +258,12 @@ function cleanGoalsStyle(value: unknown): GoalsStyle {
 		: DEFAULT_SETTINGS.goalsStyle;
 }
 
+function cleanProjectsStyle(value: unknown): ProjectsStyle {
+	return value === 'table' || value === 'cards'
+		? value
+		: DEFAULT_SETTINGS.projectsStyle;
+}
+
 function cleanTaskScope(mode: unknown, heading: unknown): TaskScope {
 	const name = typeof heading === 'string' ? heading.trim() : '';
 	if (mode !== 'heading' || !name) return ALL_TASKS;
@@ -336,6 +348,7 @@ export function resolveConfig(
 		trackedTimeFormat: cleanTrackedTimeFormat(stored.trackedTimeFormat),
 		dashboardStyle: cleanDashboardStyle(stored.dashboardStyle),
 		goalsStyle: cleanGoalsStyle(stored.goalsStyle),
+		projectsStyle: cleanProjectsStyle(stored.projectsStyle),
 	};
 }
 
@@ -357,6 +370,7 @@ export function appearanceChanged(
 		next.useTimekeep !== previous.useTimekeep ||
 		next.dashboardStyle !== previous.dashboardStyle ||
 		next.goalsStyle !== previous.goalsStyle ||
+		next.projectsStyle !== previous.projectsStyle ||
 		!sameStrings(next.goalCategories, previous.goalCategories)
 	);
 }

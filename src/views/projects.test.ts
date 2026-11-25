@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { GoalProjectItem } from './model';
 import {
+	authorOptions,
 	dashboardStats,
 	filterGoalProjects,
 	formatTrackedHours,
 	NO_STATUS_FILTER,
 	sortGoalProjects,
+	statusOptions,
 	type ProjectSort,
 } from './projects';
 
@@ -89,8 +91,57 @@ describe('filterGoalProjects', () => {
 	});
 });
 
-describe('sortGoalProjects', () => {
-	const statuses = ['Todo', 'In Progress', 'Completed'];
+describe('statusOptions', () => {
+	it('lists configured statuses, other statuses, then no status', () => {
+		const options = statusOptions(
+			[
+				...ITEMS,
+				item('Lower', 'todo', 0, 0),
+				item('Unknown', 'On Hold', 0, 0),
+				item('Missing', null, 0, 0),
+			],
+			['Todo', 'In Progress', 'Completed'],
+		);
+
+		expect(options.map((option) => option.label)).toEqual([
+			'Todo',
+			'In Progress',
+			'Completed',
+			'On Hold',
+			'No status',
+		]);
+		expect(options[options.length - 1]?.value).toBe(NO_STATUS_FILTER);
+	});
+
+	it('omits no status when every project has one', () => {
+		expect(
+			statusOptions(ITEMS, ['Todo', 'In Progress', 'Completed']).map(
+				(option) => option.label,
+			),
+		).toEqual(['Todo', 'In Progress', 'Completed']);
+	});
+});
+
+describe('authorOptions', () => {
+	it('lists authors in order and adds None for projects without one', () => {
+		expect(authorOptions(ITEMS).map((option) => option.label)).toEqual([
+			'Aaqil',
+			'Sam',
+			'None',
+		]);
+	});
+
+	it('deduplicates authors case-insensitively', () => {
+		const options = authorOptions([
+			item('One', 'Todo', 0, 0, ['Sam']),
+			item('Two', 'Todo', 0, 0, ['sam']),
+		]);
+
+		expect(options.map((option) => option.label)).toEqual(['Sam']);
+	});
+});
+
+describe('sortGoalProjects', () => {	const statuses = ['Todo', 'In Progress', 'Completed'];
 
 	function names(sort: ProjectSort, direction: 'asc' | 'desc' = 'asc') {
 		return sortGoalProjects(ITEMS, sort, direction, statuses).map(

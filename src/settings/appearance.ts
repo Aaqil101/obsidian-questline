@@ -4,6 +4,7 @@ import type {
 	GoalProjectsStyle,
 	GoalsStyle,
 	ProgressBarStyle,
+	ProjectsStyle,
 	TrackedTimeFormat,
 } from './types';
 import { renderRow, type SettingsHost } from './ui';
@@ -52,6 +53,25 @@ export function appearanceGroup(host: SettingsHost): SettingDefinitionGroup {
 									value === 'cards' ? 'cards' : 'list';
 								void plugin.updateSettings({
 									goalsStyle,
+								});
+							}),
+					);
+				},
+			),
+			renderRow(
+				'Projects style',
+				'Table shows every project in sortable columns. Cards shows the same filtered and sorted projects as a grid of cards.',
+				(setting) => {
+					setting.addDropdown((dropdown) =>
+						dropdown
+							.addOption('table', 'Table')
+							.addOption('cards', 'Cards')
+							.setValue(plugin.settings.projectsStyle)
+							.onChange((value) => {
+								const projectsStyle: ProjectsStyle =
+									value === 'cards' ? 'cards' : 'table';
+								void plugin.updateSettings({
+									projectsStyle,
 								});
 							}),
 					);

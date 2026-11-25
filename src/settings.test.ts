@@ -52,6 +52,7 @@ describe('resolveConfig', () => {
 		expect(config.trackedTimeFormat).toBe('decimal');
 		expect(config.dashboardStyle).toBe('minimal');
 		expect(config.goalsStyle).toBe('list');
+		expect(config.projectsStyle).toBe('table');
 	});
 
 	it('normalizes custom tags and falls back when they are blank', () => {
@@ -233,6 +234,21 @@ describe('resolveConfig', () => {
 		expect(invalid.goalsStyle).toBe('list');
 	});
 
+	it('accepts the projects styles and falls back otherwise', () => {
+		expect(resolveConfig({ projectsStyle: 'table' }).projectsStyle).toBe(
+			'table',
+		);
+		expect(resolveConfig({ projectsStyle: 'cards' }).projectsStyle).toBe(
+			'cards',
+		);
+
+		const invalid = resolveConfig({
+			projectsStyle: 'fancy' as typeof DEFAULT_SETTINGS.projectsStyle,
+		});
+
+		expect(invalid.projectsStyle).toBe('table');
+	});
+
 	it('detects every repaint-only appearance change', () => {
 		const base = resolveConfig(DEFAULT_SETTINGS);
 		const changes = [
@@ -242,6 +258,7 @@ describe('resolveConfig', () => {
 			resolveConfig({ useTimekeep: false }),
 			resolveConfig({ dashboardStyle: 'cards' }),
 			resolveConfig({ goalsStyle: 'cards' }),
+			resolveConfig({ projectsStyle: 'cards' }),
 			resolveConfig({ goalCategories: ['Health'] }),
 		];
 

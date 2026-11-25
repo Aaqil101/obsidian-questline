@@ -21,6 +21,7 @@ import {
 	goalOverviewItems,
 	groupGoalsByCategory,
 	inProgressProjects,
+	projectOverviewItems,
 	timelineBuckets,
 	type AttentionItem,
 	type DashboardData,
@@ -29,7 +30,17 @@ import {
 	type OverviewStat,
 	type ProjectOverviewItem,
 } from './overview';
-import { formatTrackedHours } from './projects';
+import {
+	DEFAULT_PROJECT_LIST_STATE,
+	PROJECT_SORT_OPTIONS,
+	authorOptions,
+	filterGoalProjects,
+	formatTrackedHours,
+	projectAuthor,
+	sortGoalProjects,
+	statusOptions,
+	type ProjectListState,
+} from './projects';
 import { countLabel, renderEmpty, renderProgressRow } from './render';
 
 export const DASHBOARD_VIEW_TYPE = 'questline-dashboard';
@@ -210,13 +221,16 @@ function renderStatCards(
 
 export class QuestlineDashboardView extends ItemView {
 	private unsubscribe: (() => void) | null = null;
-	private activeTab: 'dashboard' | 'goals' = 'dashboard';
+	private activeTab: 'dashboard' | 'goals' | 'projects' = 'dashboard';
 	private goalList: GoalListState = {
 		search: '',
 		category: '',
 		showArchived: false,
 		sort: DEFAULT_GOAL_SORT,
 		direction: DEFAULT_GOAL_DIRECTION,
+	};
+	private projectList: ProjectListState = {
+		...DEFAULT_PROJECT_LIST_STATE,
 	};
 
 	constructor(
@@ -266,6 +280,16 @@ export class QuestlineDashboardView extends ItemView {
 			return;
 		}
 
+		if (this.activeTab === 'projects') {
+			const projects = projectOverviewItems(
+				this.plugin.getIndex(),
+				config,
+				new Date(),
+			);
+			this.renderProjectsTab(contentEl, projects, config);
+			return;
+		}
+
 		const data = dashboardData(
 			this.plugin.getIndex(),
 			config,
@@ -290,9 +314,13 @@ export class QuestlineDashboardView extends ItemView {
 			attr: { role: 'tablist' },
 		});
 
-		const options: readonly { id: 'dashboard' | 'goals'; label: string }[] = [
+		const options: readonly {
+			id: 'dashboard' | 'goals' | 'projects';
+			label: string;
+		}[] = [
 			{ id: 'dashboard', label: 'Dashboard' },
 			{ id: 'goals', label: 'Goals' },
+			{ id: 'projects', label: 'Projects' },
 		];
 
 		for (const tab of options) {
@@ -622,6 +650,327 @@ export class QuestlineDashboardView extends ItemView {
 		});
 		for (const goal of goals) {
 			this.renderGoalCard(grid, goal, config, true);
+		}
+	}
+
+	private renderProjectsTab(
+		containerEl: HTMLElement,
+		projects: readonly ProjectOverviewItem[],
+		config: QuestlineConfig,
+	): void {
+		const header = containerEl.createDiv({
+			cls: 'questline-dashboard-header-bar',
+		});
+		const text = header.createDiv({
+			cls: 'questline-projects-header-text',
+		});
+		text.createEl('h2', {
+			cls: 'questline-dashboard-title',
+			text: 'Projects',
+		});
+		text.createEl('p', {
+			cls: 'questline-projects-summary',
+			text: countLabel(projects.length, 'project', 'projects'),
+		});
+
+		const actions = header.createDiv({
+			cls: 'questline-dashboard-actions',
+		});
+		this.addActionButton(
+			actions,
+			'New goal',
+			null,
+			() => {
+				openGoalModal(this.plugin);
+			},
+			true,
+		);
+		this.addActionButton(actions, 'New project', null, () => {
+			openProjectModal(this.plugin);
+		});
+
+		const controls = containerEl.createDiv({
+			cls: 'questline-projects-controls',
+		});
+
+		const search = controls.createEl('input', {
+			cls: 'questline-projects-search',
+			attr: { type: 'search', placeholder: 'Search projects' },
+		});
+		search.value = this.projectList.search;
+
+		const status = controls.createEl('select', {
+			cls: 'questline-projects-select',
+			attr: { 'aria-label': 'Filter by status' },
+		});
+		status.createEl('option', {
+			text: 'All statuses',
+			attr: { value: '' },
+		});
+		const statuses = statusOptions(projects, config.projectStatuses);
+		for (const option of statuses) {
+			status.createEl('option', {
+				text: option.label,
+				attr: { value: option.value },
+			});
+		}
+		if (
+			!['', ...statuses.map((option) => option.value)].includes(
+				this.projectList.status,
+			)
+		) {
+			this.projectList.status = '';
+		}
+		status.value = this.projectList.status;
+
+		const author = controls.createEl('select', {
+			cls: 'questline-projects-select',
+			attr: { 'aria-label': 'Filter by author' },
+		});
+		author.createEl('option', {
+			text: 'All authors',
+			attr: { value: '' },
+		});
+		const authors = authorOptions(projects);
+		for (const option of authors) {
+			author.createEl('option', {
+				text: option.label,
+				attr: { value: option.value },
+			});
+		}
+		if (
+			!['', ...authors.map((option) => option.value)].includes(
+				this.projectList.author,
+			)
+		) {
+			this.projectList.author = '';
+		}
+		author.value = this.projectList.author;
+
+		const sort = controls.createEl('select', {
+			cls: 'questline-projects-select',
+			attr: { 'aria-label': 'Sort projects' },
+		});
+		for (const option of PROJECT_SORT_OPTIONS) {
+			sort.createEl('option', {
+				text: option.label,
+				attr: { value: option.value },
+			});
+		}
+		sort.value = this.projectList.sort;
+
+		const direction = controls.createEl('button', {
+			cls: 'questline-projects-button',
+			text: this.projectList.direction === 'asc' ? '↑' : '↓',
+			attr: {
+				type: 'button',
+				title:
+					this.projectList.direction === 'asc'
+						? 'Ascending'
+						: 'Descending',
+			},
+		});
+
+		const clear = controls.createEl('button', {
+			cls: 'questline-projects-button',
+			text: 'Clear',
+			attr: { type: 'button' },
+		});
+
+		const body = containerEl.createDiv({
+			cls: 'questline-projects-body',
+		});
+		const refresh = (): void => {
+			this.renderProjectsBody(body, projects, config);
+		};
+
+		search.addEventListener('input', () => {
+			this.projectList.search = search.value;
+			refresh();
+		});
+		status.addEventListener('change', () => {
+			this.projectList.status = status.value;
+			refresh();
+		});
+		author.addEventListener('change', () => {
+			this.projectList.author = author.value;
+			refresh();
+		});
+		sort.addEventListener('change', () => {
+			const next = PROJECT_SORT_OPTIONS.find(
+				(option) => option.value === sort.value,
+			);
+			this.projectList.sort = next?.value ?? DEFAULT_PROJECT_LIST_STATE.sort;
+			refresh();
+		});
+		direction.addEventListener('click', () => {
+			this.projectList.direction =
+				this.projectList.direction === 'asc' ? 'desc' : 'asc';
+			const ascending = this.projectList.direction === 'asc';
+			direction.setText(ascending ? '↑' : '↓');
+			direction.setAttr('title', ascending ? 'Ascending' : 'Descending');
+			refresh();
+		});
+		clear.addEventListener('click', () => {
+			this.projectList.search = DEFAULT_PROJECT_LIST_STATE.search;
+			this.projectList.status = DEFAULT_PROJECT_LIST_STATE.status;
+			this.projectList.author = DEFAULT_PROJECT_LIST_STATE.author;
+			this.projectList.sort = DEFAULT_PROJECT_LIST_STATE.sort;
+			this.projectList.direction = DEFAULT_PROJECT_LIST_STATE.direction;
+			search.value = this.projectList.search;
+			status.value = this.projectList.status;
+			author.value = this.projectList.author;
+			sort.value = this.projectList.sort;
+			direction.setText('↑');
+			direction.setAttr('title', 'Ascending');
+			refresh();
+		});
+
+		refresh();
+	}
+
+	private renderProjectsBody(
+		containerEl: HTMLElement,
+		projects: readonly ProjectOverviewItem[],
+		config: QuestlineConfig,
+	): void {
+		containerEl.empty();
+
+		const filtered = filterGoalProjects(projects, this.projectList);
+		const visible = sortGoalProjects(
+			filtered,
+			this.projectList.sort,
+			this.projectList.direction,
+			config.projectStatuses,
+		);
+
+		if (projects.length === 0) {
+			renderEmpty(
+				containerEl,
+				'No projects yet. Create a project to get started.',
+			);
+
+			return;
+		}
+
+		containerEl.createDiv({
+			cls: 'questline-projects-count',
+			text:
+				visible.length === projects.length
+					? countLabel(visible.length, 'project', 'projects')
+					: `${visible.length} of ${countLabel(
+							projects.length,
+							'project',
+							'projects',
+						)}`,
+		});
+
+		if (visible.length === 0) {
+			renderEmpty(containerEl, 'No projects match these filters.');
+
+			return;
+		}
+
+		if (config.projectsStyle === 'cards') {
+			const grid = containerEl.createDiv({
+				cls: 'questline-dashboard-projects questline-projects-view-cards',
+			});
+			for (const project of visible) {
+				this.renderProjectCard(grid, project, config, false);
+			}
+
+			return;
+		}
+
+		const wrap = containerEl.createDiv({
+			cls: 'questline-projects-table-wrap',
+		});
+		const table = wrap.createEl('table', {
+			cls: 'questline-projects-list-table',
+		});
+		const headers = [
+			'Project',
+			'Goal',
+			'Author',
+			'Status',
+			'Progress',
+			'Tasks',
+		];
+		if (config.useTimekeep) headers.push('Hours');
+
+		const head = table.createEl('thead').createEl('tr');
+		for (const label of headers) head.createEl('th', { text: label });
+
+		const body = table.createEl('tbody');
+
+		for (const project of visible) {
+			const row = body.createEl('tr');
+
+			const name = row.createEl('td', {
+				cls: 'questline-projects-name',
+			});
+			this.noteTextLink(
+				name,
+				project.path,
+				project.name,
+				`Open project ${project.name}`,
+				'questline-projects-link',
+			);
+
+			const goal = row.createEl('td', {
+				cls: 'questline-projects-goal',
+			});
+			if (project.goal) {
+				this.noteTextLink(
+					goal,
+					project.goal.path,
+					project.goal.name,
+					`Open goal ${project.goal.name}`,
+					'questline-projects-goal-link',
+				);
+			} else {
+				goal.createSpan({
+					cls: 'questline-projects-none',
+					text: '—',
+				});
+			}
+
+			row.createEl('td', {
+				cls: 'questline-projects-author',
+				text: projectAuthor(project),
+			});
+			row.createEl('td', {
+				cls: 'questline-projects-status',
+				text: project.status ?? 'No status',
+			});
+
+			const progress = row.createEl('td', {
+				cls: 'questline-projects-progress-cell',
+			});
+			renderProgressRow(
+				progress,
+				project.counts.percent,
+				`Project progress: ${project.name}`,
+				config.progressBarStyle,
+			);
+
+			row.createEl('td', {
+				cls: 'questline-projects-number',
+				text: `${project.counts.completed} / ${project.counts.total}`,
+			});
+
+			if (config.useTimekeep) {
+				row.createEl('td', {
+					cls: 'questline-projects-number',
+					text:
+						project.hours === null
+							? '—'
+							: formatTrackedHours(
+									project.hours,
+									config.trackedTimeFormat,
+								),
+				});
+			}
 		}
 	}
 
@@ -1164,9 +1513,10 @@ export class QuestlineDashboardView extends ItemView {
 		for (const goal of goals) {
 			const row = body.createEl('tr');
 			const name = row.createEl('td');
-			this.noteLink(
+			this.noteTextLink(
 				name,
 				goal.path,
+				goal.name,
 				`Open goal ${goal.name}`,
 				'questline-dashboard-table-link',
 			);
@@ -1243,9 +1593,10 @@ export class QuestlineDashboardView extends ItemView {
 		for (const project of projects) {
 			const row = body.createEl('tr');
 			const name = row.createEl('td');
-			this.noteLink(
+			this.noteTextLink(
 				name,
 				project.path,
+				project.name,
 				`Open project ${project.name}`,
 				'questline-dashboard-table-link',
 			);
@@ -1493,15 +1844,19 @@ export class QuestlineDashboardView extends ItemView {
 		containerEl: HTMLElement,
 		project: ProjectOverviewItem,
 		config: QuestlineConfig,
+		interactive = true,
 	): void {
 		const card = containerEl.createDiv({
 			cls:
 				'questline-dashboard-card questline-dashboard-project-card ' +
-				statusClass(project.status),
+				statusClass(project.status) +
+				(interactive ? '' : ' is-static'),
 		});
-		card.addEventListener('click', (event) => {
-			revealOrOpen(this.plugin.app, project.path, event);
-		});
+		if (interactive) {
+			card.addEventListener('click', (event) => {
+				revealOrOpen(this.plugin.app, project.path, event);
+			});
+		}
 
 		const header = card.createDiv({
 			cls: 'questline-dashboard-card-header',
@@ -1609,6 +1964,19 @@ export class QuestlineDashboardView extends ItemView {
 		link.addEventListener('click', (event) => {
 			revealOrOpen(this.plugin.app, path, event);
 		});
+
+		return link;
+	}
+
+	private noteTextLink(
+		containerEl: HTMLElement,
+		path: string,
+		text: string,
+		label: string,
+		cls: string,
+	): HTMLElement {
+		const link = this.noteLink(containerEl, path, label, cls);
+		link.setText(text);
 
 		return link;
 	}

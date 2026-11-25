@@ -1729,3 +1729,113 @@
 .questline-goals-cards > .questline-dashboard-category:first-child {
 	margin-top: 4px;
 }
+
+/* Projects view */
+
+.questline-projects-header-text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.questline-projects-summary {
+	margin: 0;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.questline-projects-count {
+	margin: 0 0 8px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.questline-projects-table-wrap {
+	max-width: 100%;
+	overflow-x: auto;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	-webkit-overflow-scrolling: touch;
+}
+
+.questline-projects-list-table {
+	width: 100%;
+	min-width: 760px;
+	border-collapse: collapse;
+}
+
+.questline-projects-list-table th {
+	padding: 8px 10px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-semibold);
+	letter-spacing: 0.03em;
+	text-align: left;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+.questline-projects-list-table td {
+	padding: 8px 10px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	font-size: var(--font-ui-small);
+	overflow-wrap: anywhere;
+	vertical-align: middle;
+}
+
+.questline-projects-list-table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.questline-projects-list-table tbody tr:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.questline-projects-link.internal-link {
+	color: var(--text-normal);
+	font-weight: var(--font-medium);
+	text-decoration: none;
+}
+
+.questline-projects-link.internal-link:hover,
+.questline-projects-goal-link.internal-link:hover {
+	text-decoration: underline;
+}
+
+.questline-projects-goal-link.internal-link {
+	color: var(--text-muted);
+	text-decoration: none;
+}
+
+.questline-projects-none {
+	color: var(--text-faint);
+}
+
+.questline-projects-author,
+.questline-projects-status {
+	color: var(--text-muted);
+}
+
+.questline-projects-number {
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.questline-projects-progress-cell {
+	min-width: 140px;
+}
+
+.questline-projects-progress-cell .questline-progress-row {
+	gap: 6px;
+}
+
+.questline-projects-view-cards {
+	margin-top: 2px;
+}
+
+.questline-projects-view-cards .questline-dashboard-project-card {
+	cursor: default;
+}

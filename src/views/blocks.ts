@@ -17,17 +17,17 @@ import {
 import { revealOrOpen } from './open';
 import {
 	DEFAULT_PROJECT_DIRECTION,
+	DEFAULT_PROJECT_LIST_STATE,
 	DEFAULT_PROJECT_SORT,
-	NO_STATUS_FILTER,
 	PROJECT_SORT_OPTIONS,
-	compareText,
+	authorOptions,
 	dashboardStats,
 	filterGoalProjects,
 	formatTrackedHours,
 	projectAuthor,
 	sortGoalProjects,
-	type ProjectDirection,
-	type ProjectSort,
+	statusOptions,
+	type ProjectListState,
 	type TimeFormat,
 } from './projects';
 import {
@@ -311,27 +311,6 @@ function renderProjectCards(
 	}
 }
 
-interface GoalProjectsState {
-	search: string;
-	status: string;
-	author: string;
-	sort: ProjectSort;
-	direction: ProjectDirection;
-}
-
-const DEFAULT_GOAL_PROJECTS_STATE: GoalProjectsState = {
-	search: '',
-	status: '',
-	author: '',
-	sort: DEFAULT_PROJECT_SORT,
-	direction: DEFAULT_PROJECT_DIRECTION,
-};
-
-interface ProjectOption {
-	value: string;
-	label: string;
-}
-
 const STATUS_EMOJI: Record<string, string> = {
 	todo: '📋',
 	waiting: '⏳',
@@ -356,57 +335,6 @@ function blockBar(percent: number): string {
 	);
 
 	return '█'.repeat(filled) + '░'.repeat(5 - filled);
-}
-
-function statusOptions(
-	items: readonly GoalProjectItem[],
-	statuses: readonly string[],
-): ProjectOption[] {
-	const seen = new Map<string, string>();
-
-	for (const status of statuses) {
-		const key = status.toLowerCase();
-		if (!seen.has(key)) seen.set(key, status);
-	}
-
-	for (const item of items) {
-		if (!item.status) continue;
-
-		const key = item.status.toLowerCase();
-		if (!seen.has(key)) seen.set(key, item.status);
-	}
-
-	const options = [...seen.values()].map((status) => ({
-		value: status,
-		label: status,
-	}));
-
-	if (items.some((item) => item.status === null)) {
-		options.push({ value: NO_STATUS_FILTER, label: 'No status' });
-	}
-
-	return options;
-}
-
-function authorOptions(items: readonly GoalProjectItem[]): ProjectOption[] {
-	const seen = new Map<string, string>();
-
-	for (const item of items) {
-		for (const author of item.authors) {
-			const key = author.toLowerCase();
-			if (!seen.has(key)) seen.set(key, author);
-		}
-	}
-
-	const options = [...seen.values()]
-		.sort(compareText)
-		.map((author) => ({ value: author, label: author }));
-
-	if (items.some((item) => item.authors.length === 0)) {
-		options.push({ value: 'None', label: 'None' });
-	}
-
-	return options;
 }
 
 function renderProjectStats(
@@ -487,8 +415,8 @@ function renderProjectDashboard(
 }
 
 class GoalProjectsBlock extends QuestlineBlock {
-	private readonly state: GoalProjectsState = {
-		...DEFAULT_GOAL_PROJECTS_STATE,
+	private readonly state: ProjectListState = {
+		...DEFAULT_PROJECT_LIST_STATE,
 	};
 
 	protected paintBlock(containerEl: HTMLElement): void {

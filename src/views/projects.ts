@@ -21,11 +21,29 @@ export interface ProjectFilters {
 	author: string;
 }
 
+export interface ProjectListState extends ProjectFilters {
+	sort: ProjectSort;
+	direction: ProjectDirection;
+}
+
+export interface ProjectOption {
+	value: string;
+	label: string;
+}
+
 /** Filter value for projects that are indexed without a status. */
 export const NO_STATUS_FILTER = '__no_status__';
 
 export const DEFAULT_PROJECT_SORT: ProjectSort = 'status';
 export const DEFAULT_PROJECT_DIRECTION: ProjectDirection = 'asc';
+
+export const DEFAULT_PROJECT_LIST_STATE: ProjectListState = {
+	search: '',
+	status: '',
+	author: '',
+	sort: DEFAULT_PROJECT_SORT,
+	direction: DEFAULT_PROJECT_DIRECTION,
+};
 
 export const PROJECT_SORT_OPTIONS: readonly {
 	value: ProjectSort;
@@ -70,10 +88,10 @@ export function projectAuthor(item: GoalProjectItem): string {
 }
 
 /** Apply the search, status, and author filters. */
-export function filterGoalProjects(
-	items: readonly GoalProjectItem[],
+export function filterGoalProjects<T extends GoalProjectItem>(
+	items: readonly T[],
 	filters: ProjectFilters,
-): GoalProjectItem[] {
+): T[] {
 	const query = filters.search.trim().toLowerCase();
 	const status = filters.status.trim();
 	const author = filters.author.trim().toLowerCase();
@@ -103,13 +121,68 @@ export function filterGoalProjects(
 	});
 }
 
-/** Sort a filtered list by one column, with the name as a stable tie-break. */
-export function sortGoalProjects(
+/** Configured statuses first, then any other statuses present, then no status. */
+export function statusOptions(
 	items: readonly GoalProjectItem[],
+	statuses: readonly string[],
+): ProjectOption[] {
+	const seen = new Map<string, string>();
+
+	for (const status of statuses) {
+		const key = status.toLowerCase();
+		if (!seen.has(key)) seen.set(key, status);
+	}
+
+	for (const item of items) {
+		if (!item.status) continue;
+
+		const key = item.status.toLowerCase();
+		if (!seen.has(key)) seen.set(key, item.status);
+	}
+
+	const options = [...seen.values()].map((status) => ({
+		value: status,
+		label: status,
+	}));
+
+	if (items.some((item) => item.status === null)) {
+		options.push({ value: NO_STATUS_FILTER, label: 'No status' });
+	}
+
+	return options;
+}
+
+/** Every indexed author in text order, then None when a project has none. */
+export function authorOptions(
+	items: readonly GoalProjectItem[],
+): ProjectOption[] {
+	const seen = new Map<string, string>();
+
+	for (const item of items) {
+		for (const author of item.authors) {
+			const key = author.toLowerCase();
+			if (!seen.has(key)) seen.set(key, author);
+		}
+	}
+
+	const options = [...seen.values()]
+		.sort(compareText)
+		.map((author) => ({ value: author, label: author }));
+
+	if (items.some((item) => item.authors.length === 0)) {
+		options.push({ value: 'None', label: 'None' });
+	}
+
+	return options;
+}
+
+/** Sort a filtered list by one column, with the name as a stable tie-break. */
+export function sortGoalProjects<T extends GoalProjectItem>(
+	items: readonly T[],
 	sort: ProjectSort,
 	direction: ProjectDirection,
 	statuses: readonly string[],
-): GoalProjectItem[] {
+): T[] {
 	const multiplier = direction === 'desc' ? -1 : 1;
 
 	const compare = (left: GoalProjectItem, right: GoalProjectItem): number => {
