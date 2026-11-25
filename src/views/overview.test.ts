@@ -19,6 +19,7 @@ import {
 	inProgressProjects,
 	overviewStats,
 	projectOverviewItems,
+	timelineBuckets,
 	type GoalOverviewItem,
 	type ProjectOverviewItem,
 } from './overview';
@@ -405,6 +406,85 @@ describe('inProgressProjects', () => {
 		expect(
 			inProgressProjects(items).map((entry) => entry.name),
 		).toEqual(['Alpha', 'Gamma']);
+	});
+});
+
+describe('timelineBuckets', () => {
+	const due = (
+		remainingDays: number | null,
+		overdue = false,
+		infinite = false,
+	): DueInfo => ({
+		infinite,
+		dueDate: '2026-01-01',
+		remainingDays,
+		overdue,
+		invalid: false,
+	});
+	const item = (
+		name: string,
+		date: DueInfo | null,
+	): GoalOverviewItem => ({
+		path: `goals/${name}.md`,
+		name,
+		category: null,
+		counts: { completed: 0, total: 0, percent: 0 },
+		projectCount: 0,
+		due: date,
+		hours: null,
+		archived: false,
+	});
+
+	it('groups goals into due-date buckets', () => {
+		const buckets = timelineBuckets([
+			item('Overdue', due(-3, true)),
+			item('Today', due(0)),
+			item('Week', due(3)),
+			item('Month', due(20)),
+			item('Later', due(60)),
+			item('No date', null),
+			item('Infinite', due(null, false, true)),
+		]);
+
+		expect(
+			buckets.map((bucket) => [
+				bucket.key,
+				bucket.goals.map((goal) => goal.name),
+			]),
+		).toEqual([
+			['overdue', ['Overdue']],
+			['today', ['Today']],
+			['week', ['Week']],
+			['month', ['Month']],
+			['later', ['Later']],
+			['none', ['Infinite', 'No date']],
+		]);
+	});
+
+	it('sorts each bucket nearest first, then by name', () => {
+		const buckets = timelineBuckets([
+			item('Later B', due(60)),
+			item('Overdue B', due(-3, true)),
+			item('Later A', due(40)),
+			item('Overdue A', due(-10, true)),
+		]);
+		const overdue = buckets.find((bucket) => bucket.key === 'overdue');
+		const later = buckets.find((bucket) => bucket.key === 'later');
+
+		expect(overdue?.goals.map((goal) => goal.name)).toEqual([
+			'Overdue A',
+			'Overdue B',
+		]);
+		expect(later?.goals.map((goal) => goal.name)).toEqual([
+			'Later A',
+			'Later B',
+		]);
+	});
+
+	it('returns empty buckets without goals', () => {
+		expect(timelineBuckets([]).every((bucket) => bucket.goals.length === 0)).toBe(
+			true,
+		);
 	});
 });
 

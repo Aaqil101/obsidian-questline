@@ -1,5 +1,6 @@
 import type { SettingDefinitionGroup } from 'obsidian';
 import type {
+	DashboardStyle,
 	GoalProjectsStyle,
 	ProgressBarStyle,
 	TrackedTimeFormat,
@@ -14,6 +15,28 @@ export function appearanceGroup(host: SettingsHost): SettingDefinitionGroup {
 		type: 'group',
 		heading: 'Appearance',
 		items: [
+			renderRow(
+				'Dashboard style',
+				'Minimal uses compact tables. Cards shows goals and projects as cards with a hero and stats. Timeline orders goals by due date.',
+				(setting) => {
+					setting.addDropdown((dropdown) =>
+						dropdown
+							.addOption('minimal', 'Minimal')
+							.addOption('cards', 'Cards')
+							.addOption('timeline', 'Timeline')
+							.setValue(plugin.settings.dashboardStyle)
+							.onChange((value) => {
+								const dashboardStyle: DashboardStyle =
+									value === 'cards' || value === 'timeline'
+										? value
+										: 'minimal';
+								void plugin.updateSettings({
+									dashboardStyle,
+								});
+							}),
+					);
+				},
+			),
 			renderRow(
 				'Progress bar style',
 				'Rainbow is a full-spectrum gradient. Multi-color uses hard-edged color blocks. Threshold changes color at 25%, 50%, and 75%. Accent color matches the theme.',

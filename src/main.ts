@@ -72,6 +72,7 @@ export default class QuestlinePlugin extends Plugin {
 			this.config.goalProjectsStyle !== previous.goalProjectsStyle ||
 			this.config.trackedTimeFormat !== previous.trackedTimeFormat ||
 			this.config.useTimekeep !== previous.useTimekeep ||
+			this.config.dashboardStyle !== previous.dashboardStyle ||
 			!sameList(this.config.goalCategories, previous.goalCategories);
 		await this.saveSettings();
 

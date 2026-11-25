@@ -238,6 +238,78 @@ export function inProgressProjects(
 	);
 }
 
+export type TimelineBucketKey =
+	| 'overdue'
+	| 'today'
+	| 'week'
+	| 'month'
+	| 'later'
+	| 'none';
+
+export interface TimelineBucket {
+	key: TimelineBucketKey;
+	title: string;
+	goals: GoalOverviewItem[];
+}
+
+const TIMELINE_BUCKETS: readonly {
+	key: TimelineBucketKey;
+	title: string;
+}[] = [
+	{ key: 'overdue', title: 'Overdue' },
+	{ key: 'today', title: 'Today' },
+	{ key: 'week', title: 'This week' },
+	{ key: 'month', title: 'This month' },
+	{ key: 'later', title: 'Later' },
+	{ key: 'none', title: 'No due date' },
+];
+
+function timelineKey(goal: GoalOverviewItem): TimelineBucketKey {
+	if (!goal.due || goal.due.infinite || goal.due.remainingDays === null) {
+		return 'none';
+	}
+
+	const days = goal.due.remainingDays;
+	if (goal.due.overdue || days < 0) return 'overdue';
+	if (days === 0) return 'today';
+	if (days <= 7) return 'week';
+	if (days <= 30) return 'month';
+
+	return 'later';
+}
+
+/** Goals grouped into due-date buckets, nearest first inside each bucket. */
+export function timelineBuckets(
+	goals: readonly GoalOverviewItem[],
+): TimelineBucket[] {
+	const buckets = TIMELINE_BUCKETS.map(({ key, title }) => ({
+		key,
+		title,
+		goals: [] as GoalOverviewItem[],
+	}));
+
+	for (const goal of goals) {
+		const key = timelineKey(goal);
+		buckets.find((bucket) => bucket.key === key)?.goals.push(goal);
+	}
+
+	for (const bucket of buckets) {
+		bucket.goals.sort((left, right) => {
+			const leftDays =
+				left.due?.remainingDays ?? Number.POSITIVE_INFINITY;
+			const rightDays =
+				right.due?.remainingDays ?? Number.POSITIVE_INFINITY;
+			if (leftDays !== rightDays) return leftDays - rightDays;
+
+			const name = compareText(left.name, right.name);
+
+			return name !== 0 ? name : compareText(left.path, right.path);
+		});
+	}
+
+	return buckets;
+}
+
 function statusCount(
 	items: readonly ProjectOverviewItem[],
 	status: string,

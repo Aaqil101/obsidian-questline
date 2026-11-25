@@ -49,6 +49,7 @@ describe('resolveConfig', () => {
 		expect(config.progressBarStyle).toBe('rainbow');
 		expect(config.goalProjectsStyle).toBe('minimal');
 		expect(config.trackedTimeFormat).toBe('decimal');
+		expect(config.dashboardStyle).toBe('minimal');
 	});
 
 	it('normalizes custom tags and falls back when they are blank', () => {
@@ -198,6 +199,25 @@ describe('resolveConfig', () => {
 		});
 
 		expect(invalid.trackedTimeFormat).toBe('decimal');
+	});
+
+	it('accepts the dashboard styles and falls back otherwise', () => {
+		expect(resolveConfig({ dashboardStyle: 'minimal' }).dashboardStyle).toBe(
+			'minimal',
+		);
+		expect(resolveConfig({ dashboardStyle: 'cards' }).dashboardStyle).toBe(
+			'cards',
+		);
+		expect(
+			resolveConfig({ dashboardStyle: 'timeline' }).dashboardStyle,
+		).toBe('timeline');
+
+		const invalid = resolveConfig({
+			dashboardStyle:
+				'fancy' as typeof DEFAULT_SETTINGS.dashboardStyle,
+		});
+
+		expect(invalid.dashboardStyle).toBe('minimal');
 	});
 
 	it('normalizes template note paths', () => {
