@@ -26,7 +26,7 @@ export type TrackedTimeFormat = 'decimal' | 'readable';
 export type DashboardStyle = 'minimal' | 'cards' | 'timeline';
 
 /** How the Goals tab lists goals. */
-export type GoalsStyle = 'list' | 'cards';
+export type GoalsStyle = 'list' | 'cards' | 'board';
 
 /** How the Projects tab lists projects. */
 export type ProjectsStyle = 'table' | 'cards';
@@ -253,7 +253,7 @@ function cleanDashboardStyle(value: unknown): DashboardStyle {
 }
 
 function cleanGoalsStyle(value: unknown): GoalsStyle {
-	return value === 'list' || value === 'cards'
+	return value === 'list' || value === 'cards' || value === 'board'
 		? value
 		: DEFAULT_SETTINGS.goalsStyle;
 }

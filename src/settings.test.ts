@@ -226,6 +226,7 @@ describe('resolveConfig', () => {
 	it('accepts the goals styles and falls back otherwise', () => {
 		expect(resolveConfig({ goalsStyle: 'list' }).goalsStyle).toBe('list');
 		expect(resolveConfig({ goalsStyle: 'cards' }).goalsStyle).toBe('cards');
+		expect(resolveConfig({ goalsStyle: 'board' }).goalsStyle).toBe('board');
 
 		const invalid = resolveConfig({
 			goalsStyle: 'fancy' as typeof DEFAULT_SETTINGS.goalsStyle,
@@ -258,6 +259,7 @@ describe('resolveConfig', () => {
 			resolveConfig({ useTimekeep: false }),
 			resolveConfig({ dashboardStyle: 'cards' }),
 			resolveConfig({ goalsStyle: 'cards' }),
+			resolveConfig({ goalsStyle: 'board' }),
 			resolveConfig({ projectsStyle: 'cards' }),
 			resolveConfig({ goalCategories: ['Health'] }),
 		];

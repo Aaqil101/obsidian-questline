@@ -41,16 +41,21 @@ export function appearanceGroup(host: SettingsHost): SettingDefinitionGroup {
 			),
 			renderRow(
 				'Goals style',
-				'List shows goals in a sortable table. Cards groups goals by category when sorting by category, and otherwise shows a sorted card grid.',
+				'List shows goals in a sortable table. Cards groups goals by category when sorting by category. Board shows goals in category lanes.',
 				(setting) => {
 					setting.addDropdown((dropdown) =>
 						dropdown
 							.addOption('list', 'List')
 							.addOption('cards', 'Cards')
+							.addOption('board', 'Board')
 							.setValue(plugin.settings.goalsStyle)
 							.onChange((value) => {
 								const goalsStyle: GoalsStyle =
-									value === 'cards' ? 'cards' : 'list';
+									value === 'cards'
+										? 'cards'
+										: value === 'board'
+											? 'board'
+											: 'list';
 								void plugin.updateSettings({
 									goalsStyle,
 								});

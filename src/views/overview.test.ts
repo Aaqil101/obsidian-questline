@@ -169,6 +169,10 @@ describe('groupGoalsByCategory', () => {
 		counts: { completed: 0, total: 0, percent: 0 },
 		projectCount: 0,
 		due: null,
+		progress: null,
+		target: null,
+		timespan: null,
+		reason: null,
 		hours: null,
 		archived: false,
 	});
@@ -224,6 +228,27 @@ describe('goalOverviewItems', () => {
 			'Gamma',
 			'Epsilon',
 		]);
+	});
+
+	it('carries manual metadata for board cards', () => {
+		const node = goal('goals/Manual.md', 'Manual', {
+			progress: 5,
+			target: 10,
+			timespan: '1 Year',
+			reason: 'Because it matters.',
+		});
+		const items = goalOverviewItems(
+			indexOf([node], [], [snapshot(node.path)]),
+			DEFAULT_CONFIG,
+			NOW,
+		);
+
+		expect(items[0]).toMatchObject({
+			progress: 5,
+			target: 10,
+			timespan: '1 Year',
+			reason: 'Because it matters.',
+		});
 	});
 
 	it('marks archived goals without dropping them', () => {
@@ -438,6 +463,10 @@ describe('timelineBuckets', () => {
 		counts: { completed: 0, total: 0, percent: 0 },
 		projectCount: 0,
 		due: date,
+		progress: null,
+		target: null,
+		timespan: null,
+		reason: null,
 		hours: null,
 		archived: false,
 	});

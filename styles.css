@@ -1957,3 +1957,71 @@
 	font-style: italic;
 }
 
+/* Goals board */
+
+.questline-board-lane[class*='questline-dashboard-cat-'] {
+	border-top: 3px solid var(--questline-cat, var(--background-modifier-border));
+}
+
+.questline-goals-board-card {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	padding: 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-primary);
+	color: var(--text-normal);
+}
+
+.questline-goals-board-card.internal-link {
+	text-decoration: none;
+}
+
+.questline-goals-board-card.internal-link:hover {
+	background-color: var(--background-secondary-alt);
+	text-decoration: none;
+}
+
+.questline-goals-board-card.is-archived {
+	opacity: 0.65;
+}
+
+.questline-goals-board-header {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.questline-goals-board-title {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	font-weight: var(--font-medium);
+}
+
+.questline-goals-board-title .questline-goals-title {
+	overflow-wrap: anywhere;
+}
+
+.questline-goals-board-category {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.questline-goals-board-card .questline-progress-row {
+	gap: 6px;
+}
+
+.questline-goals-board-details,
+.questline-goals-board-reason {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	overflow-wrap: anywhere;
+}
+
+.questline-goals-board-reason {
+	padding-top: 6px;
+	border-top: 1px solid var(--background-modifier-border);
+}

@@ -54,6 +54,10 @@ function item(
 		},
 		projectCount: 0,
 		due: options.date ?? null,
+		progress: null,
+		target: null,
+		timespan: null,
+		reason: null,
 		hours: null,
 		archived: options.archived ?? false,
 	};

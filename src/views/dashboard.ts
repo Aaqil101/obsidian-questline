@@ -3,6 +3,7 @@ import { ItemView, setIcon, type WorkspaceLeaf } from 'obsidian';
 import { openGoalModal, openProjectModal } from '../creation/commands';
 import type QuestlinePlugin from '../main';
 import type { QuestlineConfig } from '../settings/types';
+import { boardColumns, renderBoard } from './board';
 import {
 	DEFAULT_GOAL_DIRECTION,
 	DEFAULT_GOAL_SORT,
@@ -421,29 +422,34 @@ export class QuestlineDashboardView extends ItemView {
 		archivedInput.checked = this.goalList.showArchived;
 		archived.createSpan({ text: 'Show archived' });
 
-		const sort = controls.createEl('select', {
-			cls: 'questline-projects-select',
-			attr: { 'aria-label': 'Sort goals' },
-		});
-		for (const option of GOAL_SORT_OPTIONS) {
-			sort.createEl('option', {
-				text: option.label,
-				attr: { value: option.value },
+		let sort: HTMLSelectElement | null = null;
+		let direction: HTMLButtonElement | null = null;
+
+		if (config.goalsStyle !== 'board') {
+			sort = controls.createEl('select', {
+				cls: 'questline-projects-select',
+				attr: { 'aria-label': 'Sort goals' },
+			});
+			for (const option of GOAL_SORT_OPTIONS) {
+				sort.createEl('option', {
+					text: option.label,
+					attr: { value: option.value },
+				});
+			}
+			sort.value = this.goalList.sort;
+
+			direction = controls.createEl('button', {
+				cls: 'questline-projects-button',
+				text: this.goalList.direction === 'asc' ? '↑' : '↓',
+				attr: {
+					type: 'button',
+					title:
+						this.goalList.direction === 'asc'
+							? 'Ascending'
+							: 'Descending',
+				},
 			});
 		}
-		sort.value = this.goalList.sort;
-
-		const direction = controls.createEl('button', {
-			cls: 'questline-projects-button',
-			text: this.goalList.direction === 'asc' ? '↑' : '↓',
-			attr: {
-				type: 'button',
-				title:
-					this.goalList.direction === 'asc'
-						? 'Ascending'
-						: 'Descending',
-			},
-		});
 
 		const clear = controls.createEl('button', {
 			cls: 'questline-projects-button',
@@ -470,21 +476,28 @@ export class QuestlineDashboardView extends ItemView {
 			this.goalList.showArchived = archivedInput.checked;
 			refresh();
 		});
-		sort.addEventListener('change', () => {
-			const next = GOAL_SORT_OPTIONS.find(
-				(option) => option.value === sort.value,
-			);
-			this.goalList.sort = next?.value ?? DEFAULT_GOAL_SORT;
-			refresh();
-		});
-		direction.addEventListener('click', () => {
-			this.goalList.direction =
-				this.goalList.direction === 'asc' ? 'desc' : 'asc';
-			const ascending = this.goalList.direction === 'asc';
-			direction.setText(ascending ? '↑' : '↓');
-			direction.setAttr('title', ascending ? 'Ascending' : 'Descending');
-			refresh();
-		});
+		if (sort) {
+			sort.addEventListener('change', () => {
+				const next = GOAL_SORT_OPTIONS.find(
+					(option) => option.value === sort?.value,
+				);
+				this.goalList.sort = next?.value ?? DEFAULT_GOAL_SORT;
+				refresh();
+			});
+		}
+		if (direction) {
+			direction.addEventListener('click', () => {
+				this.goalList.direction =
+					this.goalList.direction === 'asc' ? 'desc' : 'asc';
+				const ascending = this.goalList.direction === 'asc';
+				direction?.setText(ascending ? '↑' : '↓');
+				direction?.setAttr(
+					'title',
+					ascending ? 'Ascending' : 'Descending',
+				);
+				refresh();
+			});
+		}
 		clear.addEventListener('click', () => {
 			this.goalList.search = '';
 			this.goalList.category = '';
@@ -494,9 +507,11 @@ export class QuestlineDashboardView extends ItemView {
 			search.value = '';
 			category.value = '';
 			archivedInput.checked = false;
-			sort.value = DEFAULT_GOAL_SORT;
-			direction.setText('↑');
-			direction.setAttr('title', 'Ascending');
+			if (sort) sort.value = DEFAULT_GOAL_SORT;
+			if (direction) {
+				direction.setText('↑');
+				direction.setAttr('title', 'Ascending');
+			}
 			refresh();
 		});
 
@@ -542,6 +557,11 @@ export class QuestlineDashboardView extends ItemView {
 		if (visible.length === 0) {
 			renderEmpty(containerEl, 'No goals match these filters.');
 
+			return;
+		}
+
+		if (config.goalsStyle === 'board') {
+			this.renderGoalsBoard(containerEl, visible, config);
 			return;
 		}
 
@@ -962,6 +982,109 @@ export class QuestlineDashboardView extends ItemView {
 								),
 				});
 			}
+		}
+	}
+
+	private renderGoalsBoard(
+		containerEl: HTMLElement,
+		goals: readonly GoalOverviewItem[],
+		config: QuestlineConfig,
+	): void {
+		const sorted = sortGoals(
+			goals,
+			'name',
+			'asc',
+			config.goalCategories,
+		);
+		const columns = boardColumns(
+			sorted,
+			config.goalCategories,
+			(goal) => goal.category,
+			'No category',
+		);
+
+		renderBoard(containerEl, columns, {
+			laneClass: (column) => categoryClass(column.value),
+			emptyText: 'No goals',
+			renderCard: (cards, goal) => {
+				this.renderGoalBoardCard(cards, goal, config);
+			},
+		});
+	}
+
+	private renderGoalBoardCard(
+		containerEl: HTMLElement,
+		goal: GoalOverviewItem,
+		config: QuestlineConfig,
+	): void {
+		const card = this.noteLink(
+			containerEl,
+			goal.path,
+			`Open goal ${goal.name}`,
+			`questline-goals-board-card${goal.archived ? ' is-archived' : ''}`,
+		);
+
+		const header = card.createDiv({
+			cls: 'questline-goals-board-header',
+		});
+		const title = header.createDiv({
+			cls: 'questline-goals-board-title',
+		});
+		title.createSpan({
+			cls: 'questline-goals-title',
+			text: goal.name,
+		});
+		if (goal.archived) {
+			title.createSpan({
+				cls: 'questline-goals-archived-badge',
+				text: 'Archived',
+			});
+		}
+		header.createSpan({
+			cls: 'questline-goals-board-category',
+			text: goal.category ?? 'No category',
+		});
+
+		renderProgressRow(
+			card,
+			goal.counts.percent,
+			`Goal progress: ${goal.name}`,
+			config.progressBarStyle,
+		);
+
+		const meta = card.createDiv({ cls: 'questline-dashboard-meta' });
+		addMetaItem(
+			meta,
+			'list-checks',
+			`${goal.counts.completed} / ${goal.counts.total} tasks`,
+		);
+		addMetaItem(
+			meta,
+			'folder',
+			countLabel(goal.projectCount, 'project', 'projects'),
+		);
+		addMetaItem(meta, 'calendar', describeDue(goal.due));
+
+		const details: string[] = [];
+		if (goal.target !== null) {
+			details.push(
+				goal.progress === null
+					? `Target: ${goal.target}`
+					: `Target: ${goal.progress} / ${goal.target}`,
+			);
+		}
+		if (goal.timespan) details.push(`Timespan: ${goal.timespan}`);
+		if (details.length > 0) {
+			card.createDiv({
+				cls: 'questline-goals-board-details',
+				text: details.join(' · '),
+			});
+		}
+		if (goal.reason) {
+			card.createDiv({
+				cls: 'questline-goals-board-reason',
+				text: `Reason: ${goal.reason}`,
+			});
 		}
 	}
 

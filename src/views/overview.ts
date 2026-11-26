@@ -25,6 +25,11 @@ export interface GoalOverviewItem {
 	counts: TaskProgress;
 	projectCount: number;
 	due: DueInfo | null;
+	/** Manual fields from the goal note, for the board card details. */
+	progress: number | null;
+	target: number | null;
+	timespan: string | null;
+	reason: string | null;
 	/** Tracked hours across the linked projects, or null when Timekeep is off. */
 	hours: number | null;
 	/** True for `type: Archive`; the dashboard hides these by default. */
@@ -162,6 +167,10 @@ export function goalOverviewItems(
 			counts: view.counts,
 			projectCount: view.projectCount,
 			due: view.due,
+			progress: goal.fields.progress,
+			target: goal.fields.target,
+			timespan: goal.fields.timespan,
+			reason: goal.fields.reason,
 			hours: goalHours(index, goal, config, now, projectHours),
 			archived: isArchivedGoal(goal),
 		};
