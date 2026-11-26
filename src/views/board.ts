@@ -18,6 +18,70 @@ export interface BoardRenderOptions<T> {
 	emptyText?: string;
 }
 
+export type BoardKind = 'goal' | 'project';
+
+export interface BoardMovePatch {
+	/** Frontmatter keys to set. */
+	set: Record<string, string>;
+	/** Frontmatter keys to remove. */
+	remove: string[];
+}
+
+function sameLane(left: string | null, right: string | null): boolean {
+	return (left?.trim().toLowerCase() ?? '') ===
+		(right?.trim().toLowerCase() ?? '');
+}
+
+/**
+ * The frontmatter change for dropping a card on a lane, or null when the
+ * drop would not change the note. Goal cards write `category`; the no-value
+ * lane also clears the legacy `status` fallback. Project cards write
+ * `status`.
+ */
+export function boardMovePatch(
+	kind: BoardKind,
+	current: string | null,
+	target: string | null,
+): BoardMovePatch | null {
+	const next = target?.trim() || null;
+	if (sameLane(current, next)) return null;
+
+	if (kind === 'goal') {
+		return next
+			? { set: { category: next }, remove: [] }
+			: { set: {}, remove: ['category', 'status'] };
+	}
+
+	return next
+		? { set: { status: next }, remove: [] }
+		: { set: {}, remove: ['status'] };
+}
+
+/**
+ * Apply a move patch without duplicating a differently-cased key. Obsidian
+ * preserves frontmatter key casing, so `Category` and `category` must be the
+ * same field here.
+ */
+export function applyBoardMove(
+	frontmatter: Record<string, unknown>,
+	patch: BoardMovePatch,
+): void {
+	const findKey = (key: string): string | undefined =>
+		Object.keys(frontmatter).find(
+			(name) => name.toLowerCase() === key.toLowerCase(),
+		);
+
+	for (const key of patch.remove) {
+		const existing = findKey(key);
+		if (existing) delete frontmatter[existing];
+	}
+
+	for (const [key, value] of Object.entries(patch.set)) {
+		const existing = findKey(key);
+		frontmatter[existing ?? key] = value;
+	}
+}
+
 /**
  * Group items into ordered lanes.
  *

@@ -2040,3 +2040,22 @@
 	align-items: flex-start;
 }
 
+/* Board drag and drop */
+
+.questline-board-cards [draggable='true'] {
+	cursor: grab;
+}
+
+.questline-board-cards [draggable='true']:active {
+	cursor: grabbing;
+}
+
+.questline-board-cards .is-dragging {
+	opacity: 0.45;
+}
+
+.questline-board-lane.is-drop-target {
+	border-color: var(--interactive-accent);
+	background-color: var(--background-secondary-alt);
+	box-shadow: 0 0 0 1px var(--interactive-accent);
+}

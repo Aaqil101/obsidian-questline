@@ -1,9 +1,21 @@
 /** The workspace dashboard: minimal tables, cards, and a due-date timeline. */
-import { ItemView, setIcon, type WorkspaceLeaf } from 'obsidian';
+import {
+	ItemView,
+	Notice,
+	TFile,
+	setIcon,
+	type WorkspaceLeaf,
+} from 'obsidian';
 import { openGoalModal, openProjectModal } from '../creation/commands';
 import type QuestlinePlugin from '../main';
 import type { QuestlineConfig } from '../settings/types';
-import { boardColumns, renderBoard } from './board';
+import {
+	applyBoardMove,
+	boardColumns,
+	boardMovePatch,
+	renderBoard,
+	type BoardKind,
+} from './board';
 import {
 	DEFAULT_GOAL_DIRECTION,
 	DEFAULT_GOAL_SORT,
@@ -56,6 +68,13 @@ const STAT_ICONS: Record<string, string> = {
 };
 
 const CATEGORY_COLORS = 8;
+
+interface BoardDragState {
+	kind: BoardKind;
+	path: string;
+	lane: string | null;
+	name: string;
+}
 
 function slug(text: string): string {
 	const value = text
@@ -233,6 +252,9 @@ export class QuestlineDashboardView extends ItemView {
 	private projectList: ProjectListState = {
 		...DEFAULT_PROJECT_LIST_STATE,
 	};
+	private boardDrag: BoardDragState | null = null;
+	private boardWritePending = false;
+	private boardDragEndedAt = 0;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -267,6 +289,7 @@ export class QuestlineDashboardView extends ItemView {
 	private render(): void {
 		const { contentEl } = this;
 		contentEl.empty();
+		this.boardDrag = null;
 
 		const config = this.plugin.getConfig();
 		this.renderTabs(contentEl);
@@ -1030,6 +1053,8 @@ export class QuestlineDashboardView extends ItemView {
 				this.renderGoalBoardCard(cards, goal, config);
 			},
 		});
+
+		this.bindBoardDrop(containerEl, 'goal');
 	}
 
 	private renderGoalBoardCard(
@@ -1042,6 +1067,7 @@ export class QuestlineDashboardView extends ItemView {
 			goal.path,
 			`Open goal ${goal.name}`,
 			`questline-goals-board-card${goal.archived ? ' is-archived' : ''}`,
+			() => this.canOpenBoardCard(),
 		);
 
 		const header = card.createDiv({
@@ -1106,6 +1132,14 @@ export class QuestlineDashboardView extends ItemView {
 				text: `Reason: ${goal.reason}`,
 			});
 		}
+
+		this.enableBoardDrag(
+			card,
+			'goal',
+			goal.path,
+			goal.category,
+			goal.name,
+		);
 	}
 
 	private renderMinimal(
@@ -2007,9 +2041,12 @@ export class QuestlineDashboardView extends ItemView {
 					config,
 					true,
 					true,
+					true,
 				);
 			},
 		});
+
+		this.bindBoardDrop(containerEl, 'project');
 	}
 
 	private renderProjectCard(
@@ -2018,6 +2055,7 @@ export class QuestlineDashboardView extends ItemView {
 		config: QuestlineConfig,
 		interactive = true,
 		fullMeta = false,
+		draggable = false,
 	): void {
 		const card = containerEl.createDiv({
 			cls:
@@ -2027,6 +2065,8 @@ export class QuestlineDashboardView extends ItemView {
 		});
 		if (interactive) {
 			card.addEventListener('click', (event) => {
+				if (draggable && !this.canOpenBoardCard()) return;
+
 				revealOrOpen(this.plugin.app, project.path, event);
 			});
 		}
@@ -2040,6 +2080,13 @@ export class QuestlineDashboardView extends ItemView {
 			attr: { href: project.path },
 		});
 		title.addEventListener('click', (event) => {
+			if (draggable && !this.canOpenBoardCard()) {
+				event.preventDefault();
+				event.stopPropagation();
+
+				return;
+			}
+
 			event.stopPropagation();
 			revealOrOpen(this.plugin.app, project.path, event);
 		});
@@ -2080,6 +2127,7 @@ export class QuestlineDashboardView extends ItemView {
 					`Goal: ${goal.name}`,
 					`Open goal ${goal.name}`,
 					'questline-dashboard-goal-link',
+					() => !draggable || this.canOpenBoardCard(),
 				);
 				goalLink.addEventListener('click', (event) => {
 					event.stopPropagation();
@@ -2102,6 +2150,125 @@ export class QuestlineDashboardView extends ItemView {
 				'clock',
 				`${formatTrackedHours(project.hours, config.trackedTimeFormat)} tracked`,
 			);
+		}
+
+		if (draggable) {
+			this.enableBoardDrag(
+				card,
+				'project',
+				project.path,
+				project.status,
+				project.name,
+			);
+		}
+	}
+
+	private enableBoardDrag(
+		card: HTMLElement,
+		kind: BoardKind,
+		path: string,
+		lane: string | null,
+		name: string,
+	): void {
+		card.setAttr('draggable', 'true');
+		card.addEventListener('dragstart', (event) => {
+			this.boardDrag = { kind, path, lane, name };
+			this.boardDragEndedAt = Date.now();
+			card.addClass('is-dragging');
+			if (event.dataTransfer) {
+				event.dataTransfer.effectAllowed = 'move';
+				event.dataTransfer.setData('text/plain', path);
+			}
+		});
+		card.addEventListener('dragend', () => {
+			card.removeClass('is-dragging');
+			this.boardDrag = null;
+			this.boardDragEndedAt = Date.now();
+			this.clearBoardDropTargets();
+		});
+	}
+
+	private canOpenBoardCard(): boolean {
+		return Date.now() - this.boardDragEndedAt >= 250;
+	}
+
+	private bindBoardDrop(
+		containerEl: HTMLElement,
+		kind: BoardKind,
+	): void {
+		containerEl
+			.querySelectorAll<HTMLElement>('.questline-board-lane')
+			.forEach((lane) => {
+				lane.addEventListener('dragover', (event) => {
+					const drag = this.boardDrag;
+					if (!drag || drag.kind !== kind) return;
+
+					event.preventDefault();
+					if (event.dataTransfer) {
+						event.dataTransfer.dropEffect = 'move';
+					}
+					lane.addClass('is-drop-target');
+				});
+				lane.addEventListener('dragleave', (event) => {
+					const related = event.relatedTarget;
+					if (related instanceof Node && lane.contains(related)) return;
+
+					lane.removeClass('is-drop-target');
+				});
+				lane.addEventListener('drop', (event) => {
+					const drag = this.boardDrag;
+					if (!drag || drag.kind !== kind) return;
+
+					event.preventDefault();
+					this.clearBoardDropTargets();
+					this.boardDragEndedAt = Date.now();
+					const target =
+						lane.dataset.laneNone === 'true'
+							? null
+							: lane.dataset.lane || null;
+					this.boardDrag = null;
+					void this.moveBoardCard(kind, drag, target);
+				});
+			});
+	}
+
+	private clearBoardDropTargets(): void {
+		this.contentEl
+			.querySelectorAll<HTMLElement>(
+				'.questline-board-lane.is-drop-target',
+			)
+			.forEach((lane) => lane.removeClass('is-drop-target'));
+	}
+
+	private async moveBoardCard(
+		kind: BoardKind,
+		drag: BoardDragState,
+		target: string | null,
+	): Promise<void> {
+		if (this.boardWritePending) return;
+
+		const patch = boardMovePatch(kind, drag.lane, target);
+		if (!patch) return;
+
+		const file = this.plugin.app.vault.getAbstractFileByPath(drag.path);
+		if (!(file instanceof TFile)) {
+			new Notice(`Could not find the ${kind} note.`);
+
+			return;
+		}
+
+		this.boardWritePending = true;
+		try {
+			await this.plugin.app.fileManager.processFrontMatter(
+				file,
+				(frontmatter: Record<string, unknown>) => {
+					applyBoardMove(frontmatter, patch);
+				},
+			);
+		} catch {
+			new Notice(`Could not move the ${kind}.`);
+		} finally {
+			this.boardWritePending = false;
 		}
 	}
 
@@ -2133,12 +2300,19 @@ export class QuestlineDashboardView extends ItemView {
 		path: string,
 		label: string,
 		cls: string,
+		guard?: () => boolean,
 	): HTMLElement {
 		const link = containerEl.createEl('a', {
 			cls: `internal-link ${cls}`,
 			attr: { href: path, 'aria-label': label },
 		});
 		link.addEventListener('click', (event) => {
+			if (guard && !guard()) {
+				event.preventDefault();
+
+				return;
+			}
+
 			revealOrOpen(this.plugin.app, path, event);
 		});
 
@@ -2151,8 +2325,9 @@ export class QuestlineDashboardView extends ItemView {
 		text: string,
 		label: string,
 		cls: string,
+		guard?: () => boolean,
 	): HTMLElement {
-		const link = this.noteLink(containerEl, path, label, cls);
+		const link = this.noteLink(containerEl, path, label, cls, guard);
 		link.setText(text);
 
 		return link;
