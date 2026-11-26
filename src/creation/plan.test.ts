@@ -39,7 +39,7 @@ function context(paths: readonly string[] = []): PlanContext {
 function projectDraft(patch: Partial<ProjectDraft> = {}): ProjectDraft {
 	return {
 		title: 'Ship the site',
-		goal: null,
+		goals: [],
 		status: '',
 		author: '',
 		subtitle: '',
@@ -332,11 +332,13 @@ describe('planProject', () => {
 		const plan = planProject(
 			projectDraft({
 				title: 'Ship: the site',
-				goal: {
-					path: 'goals/Learn Python.md',
-					name: 'Learn Python',
-					display: 'Python',
-				},
+				goals: [
+					{
+						path: 'goals/Learn Python.md',
+						name: 'Learn Python',
+						display: 'Python',
+					},
+				],
 				status: 'In Progress',
 				author: 'Aaqil',
 				subtitle: 'Ship it',
@@ -365,6 +367,43 @@ describe('planProject', () => {
 		);
 	});
 
+	it('writes multiple goal links and joins template tokens', () => {
+		const plan = planProject(
+			projectDraft({
+				title: 'Bridge',
+				goals: [
+					{
+						path: 'goals/A.md',
+						name: '2026-01-01 - A',
+						display: 'A',
+					},
+					{
+						path: 'goals/B.md',
+						name: '2026-01-01 - B',
+						display: 'B',
+					},
+				],
+			}),
+			context(),
+			{
+				template: {
+					frontmatter: null,
+					body: 'Goals: {{goal}}\nNames: {{goal_name}}',
+				},
+			},
+		);
+
+		expect(plan.note.frontmatter.goal).toEqual([
+			'[[goals/A|A]]',
+			'[[goals/B|B]]',
+		]);
+		expect(plan.note.body).toContain(
+			'Goals: [[goals/A|A]], [[goals/B|B]]',
+		);
+		expect(plan.note.body).toContain('Names: A, B');
+		expect(plan.path).toBe('projects/A, B - Bridge.md');
+	});
+
 	it('keeps a standalone project unassigned and defaults the status', () => {
 		const plan = planProject(projectDraft(), context(), { template: null });
 
@@ -382,10 +421,12 @@ describe('planProject', () => {
 		const plan = planProject(
 			projectDraft({
 				title: 'ts',
-				goal: {
-					path: 'goals/2026-11-23 - Goal B.md',
-					name: '2026-11-23 - Goal B',
-				},
+				goals: [
+					{
+						path: 'goals/2026-11-23 - Goal B.md',
+						name: '2026-11-23 - Goal B',
+					},
+				],
 			}),
 			context(),
 			{ template: null },

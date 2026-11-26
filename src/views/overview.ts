@@ -10,6 +10,7 @@ import {
 	goalProgressView,
 	projectProgressView,
 	type DueInfo,
+	type ProjectGoalLink,
 } from './model';
 import { compareText, formatTrackedHours } from './projects';
 
@@ -37,7 +38,7 @@ export interface ProjectOverviewItem {
 	authors: string[];
 	status: string | null;
 	counts: TaskProgress;
-	goal: { path: string; name: string } | null;
+	goals: ProjectGoalLink[];
 	/** Tracked hours, or null when Timekeep totals are turned off. */
 	hours: number | null;
 }
@@ -218,7 +219,7 @@ export function projectOverviewItems(
 			authors: project.fields.authors,
 			status: view.status,
 			counts: view.counts,
-			goal: view.goal,
+			goals: view.goals,
 			hours: view.workHours,
 		};
 	});
@@ -381,7 +382,7 @@ export function attentionItems(
 	}
 
 	for (const project of inProgressProjects(projects)) {
-		if (!project.goal) {
+		if (project.goals.length === 0) {
 			items.push({
 				kind: 'project-no-goal',
 				path: project.path,

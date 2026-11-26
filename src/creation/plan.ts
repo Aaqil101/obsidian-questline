@@ -69,7 +69,7 @@ export interface ProjectGoalLink {
 
 export interface ProjectDraft {
 	title: string;
-	goal: ProjectGoalLink | null;
+	goals: ProjectGoalLink[];
 	status: string;
 	author: string;
 	subtitle: string;
@@ -371,12 +371,13 @@ export function planProject(
 	const author = draft.author.trim();
 	const subtitle = draft.subtitle.trim();
 	const status = draft.status.trim() || config.projectStatuses[0] || 'Todo';
-	const goalLink = draft.goal ? noteLink(draft.goal) : null;
+	const goalLinks = draft.goals.map(noteLink);
+	const goalNames = draft.goals.map(goalDisplayName);
 
 	const values: TemplateValues = {
 		title,
-		goal: goalLink,
-		goalName: draft.goal ? goalDisplayName(draft.goal) : null,
+		goal: goalLinks.length > 0 ? goalLinks.join(', ') : null,
+		goalName: goalNames.length > 0 ? goalNames.join(', ') : null,
 		author,
 		subtitle,
 		status,
@@ -390,7 +391,8 @@ export function planProject(
 	};
 	if (author) core.author = author;
 	if (subtitle) core.subtitle = subtitle;
-	if (goalLink) core.goal = goalLink;
+	if (goalLinks.length === 1) core.goal = goalLinks[0];
+	if (goalLinks.length > 1) core.goal = goalLinks;
 
 	const folder = normalizeFolder(draft.folder);
 	const requestedName = noteName(

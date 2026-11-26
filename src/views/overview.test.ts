@@ -77,7 +77,7 @@ function project(
 	path: string,
 	name: string,
 	status: string | null,
-	goalPath: string | null = null,
+	goalPaths: string | readonly string[] | null = null,
 	extra: Record<string, unknown> = {},
 ): ProjectNode {
 	return {
@@ -94,7 +94,12 @@ function project(
 			},
 			body: '',
 		}),
-		goalPath,
+		goalPaths:
+			goalPaths === null
+				? []
+				: typeof goalPaths === 'string'
+					? [goalPaths]
+					: [...goalPaths],
 	};
 }
 
@@ -343,12 +348,14 @@ describe('projectOverviewItems', () => {
 		const items = projectOverviewItems(index, DEFAULT_CONFIG, NOW);
 		const zeta = items.find((item) => item.name === 'Zeta');
 
-		expect(zeta?.goal).toEqual({
-			path: 'goals/Alpha.md',
-			name: 'Alpha',
-		});
+		expect(zeta?.goals).toEqual([
+			{
+				path: 'goals/Alpha.md',
+				name: 'Alpha',
+			},
+		]);
 		expect(zeta?.hours).toBe(2);
-		expect(items.find((item) => item.name === 'Alpha')?.goal).toBeNull();
+		expect(items.find((item) => item.name === 'Alpha')?.goals).toEqual([]);
 	});
 
 	it('drops hours when Timekeep is off', () => {
@@ -392,7 +399,7 @@ describe('inProgressProjects', () => {
 			authors: [],
 			status,
 			counts: { completed: 0, total: 0, percent: 0 },
-			goal: null,
+			goals: [],
 			hours: null,
 		});
 		const items = [

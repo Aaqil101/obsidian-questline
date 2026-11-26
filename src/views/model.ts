@@ -40,7 +40,7 @@ export interface ProjectProgressView {
 	name: string;
 	counts: TaskProgress;
 	status: string | null;
-	goal: ProjectGoalLink | null;
+	goals: ProjectGoalLink[];
 	/** Tracked hours, or null when Timekeep totals are turned off. */
 	workHours: number | null;
 	/** True when the project has no tasks to measure. */
@@ -177,17 +177,23 @@ export function projectProgressView(
 			)
 		: { completed: 0, total: 0, percent: 0 };
 
-	const goal = project.goalPath
-		? index.goalByPath.get(project.goalPath)
-		: undefined;
+	const goals: ProjectGoalLink[] = [];
+
+	for (const path of project.goalPaths) {
+		const linked = index.goalByPath.get(path);
+		if (linked) {
+			goals.push({
+				path: linked.path,
+				name: goalTitle(linked.name, linked.aliases),
+			});
+		}
+	}
 
 	return {
 		name: project.name,
 		counts,
 		status: project.fields.status,
-		goal: goal
-			? { path: goal.path, name: goalTitle(goal.name, goal.aliases) }
-			: null,
+		goals,
 		workHours:
 			config.useTimekeep && note
 				? sumWorkHours(note.body, { now }).hours

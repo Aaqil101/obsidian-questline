@@ -386,7 +386,9 @@ suite('reference P&Q vault', () => {
 		expect(index.projects).toHaveLength(28);
 		expect(vault.notes.filter((note) => note.path.startsWith('Projects/'))).toHaveLength(43);
 		expect(excludedNotes).toEqual({ tagged: 10, untagged: 5 });
-		expect(index.projects.every((project) => project.goalPath !== null)).toBe(true);
+		expect(
+			index.projects.every((project) => project.goalPaths.length > 0),
+		).toBe(true);
 	});
 
 	it('matches Dataview task counts apart from cancelled tasks', () => {
@@ -429,7 +431,9 @@ suite('reference P&Q vault', () => {
 	it('strips the semicolon alias from every project name', () => {
 		for (const row of projectRows) {
 			expect(row.name.startsWith(';')).toBe(false);
-			expect(index.projectByPath.get(row.path)?.goalPath).not.toBeNull();
+			expect(
+				index.projectByPath.get(row.path)?.goalPaths.length,
+			).toBeGreaterThan(0);
 		}
 	});
 

@@ -48,8 +48,8 @@ export interface ProjectNode {
 	/** Folder that holds the project note, when it uses the `Name/Name.md` layout. */
 	folderProject: string | null;
 	fields: ResolvedFields;
-	/** Path of the resolved goal, or null when the goal link is missing or unknown. */
-	goalPath: string | null;
+	/** Resolved goal paths, in link order. Empty when no link resolves. */
+	goalPaths: string[];
 }
 
 export interface QuestlineIndex {

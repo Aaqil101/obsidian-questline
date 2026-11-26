@@ -29,7 +29,7 @@ export interface ResolvedFields {
 	status: string | null;
 	/** `type` frontmatter, used to keep `questline-template` notes out of the index. */
 	noteType: string | null;
-	goal: ResolvedLink | null;
+	goals: ResolvedLink[];
 	projectTemplate: string | null;
 	timespan: string | null;
 	reason: string | null;
@@ -137,6 +137,54 @@ function unique(values: string[]): string[] {
 	return [...new Set(values)];
 }
 
+/**
+ * Split a comma-separated value without breaking commas inside wikilinks.
+ * Plain text is kept whole so a title like `Reach $10,000 MRR` stays one goal.
+ */
+function splitGoalText(text: string): string[] {
+	if (!text.includes('[[')) return [text];
+
+	const parts: string[] = [];
+	let depth = 0;
+	let start = 0;
+
+	for (let index = 0; index < text.length; index += 1) {
+		if (text.startsWith('[[', index)) {
+			depth += 1;
+			index += 1;
+			continue;
+		}
+
+		if (text.startsWith(']]', index) && depth > 0) {
+			depth -= 1;
+			index += 1;
+			continue;
+		}
+
+		if (text[index] === ',' && depth === 0) {
+			parts.push(text.slice(start, index));
+			start = index + 1;
+		}
+	}
+
+	parts.push(text.slice(start));
+
+	return parts.map((part) => part.trim()).filter(Boolean);
+}
+
+function parseGoalLinks(value: unknown): ResolvedLink[] {
+	const links: ResolvedLink[] = [];
+
+	for (const text of asTextList(value)) {
+		for (const part of splitGoalText(text)) {
+			const link = parseLink(part);
+			if (link) links.push(link);
+		}
+	}
+
+	return links;
+}
+
 export function resolveNote(
 	source: NoteSource,
 	options: ResolveOptions = {},
@@ -174,7 +222,11 @@ export function resolveNote(
 	const status = text('status');
 	const projectClass = text('class');
 	const templateText = text('project_template');
-	const goalText = text('goal');
+	const frontmatterGoals = parseGoalLinks(lookup(frontmatter, 'goal'));
+	const goals =
+		frontmatterGoals.length > 0
+			? frontmatterGoals
+			: parseGoalLinks(inline.get('goal'));
 	const isGoal = tags.includes(goalTag);
 	const numbers = (key: string): number | null =>
 		asNumber(lookup(frontmatter, key)) ?? asNumber(inline.get(key.toLowerCase()));
@@ -191,7 +243,7 @@ export function resolveNote(
 		category: text('category') ?? (isGoal ? status : null),
 		status,
 		noteType: text('type'),
-		goal: goalText ? parseLink(goalText) : null,
+		goals,
 		projectTemplate: templateText
 			? (parseLink(templateText)?.target ?? null)
 			: null,

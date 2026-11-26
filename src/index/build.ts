@@ -148,7 +148,7 @@ export function buildIndex(notes: Iterable<NoteSnapshot>): QuestlineIndex {
 				folder: noteFolder(note.path),
 				folderProject: projectFolder(note.path),
 				fields,
-				goalPath: null,
+				goalPaths: [],
 			});
 			notesByPath.set(note.path, note);
 		}
@@ -159,14 +159,16 @@ export function buildIndex(notes: Iterable<NoteSnapshot>): QuestlineIndex {
 	const projectByPath = new Map(projects.map((project) => [project.path, project]));
 
 	for (const project of projects) {
-		const target = project.fields.goal?.target;
-		if (!target) continue;
+		const seen = new Set<string>();
 
-		const goalPath = resolveGoal(lookup, target);
-		if (!goalPath) continue;
+		for (const link of project.fields.goals) {
+			const path = resolveGoal(lookup, link.target);
+			if (!path || seen.has(path)) continue;
 
-		project.goalPath = goalPath;
-		goalByPath.get(goalPath)?.projectPaths.push(project.path);
+			seen.add(path);
+			project.goalPaths.push(path);
+			goalByPath.get(path)?.projectPaths.push(project.path);
+		}
 	}
 
 	for (const goal of goals) {

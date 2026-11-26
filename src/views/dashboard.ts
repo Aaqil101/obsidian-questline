@@ -12,7 +12,7 @@ import {
 	sortGoals,
 	type GoalListState,
 } from './goal-list';
-import { describeDue } from './model';
+import { describeDue, type ProjectGoalLink } from './model';
 import { revealOrOpen } from './open';
 import {
 	activeGoals,
@@ -890,7 +890,7 @@ export class QuestlineDashboardView extends ItemView {
 		});
 		const headers = [
 			'Project',
-			'Goal',
+			'Goals',
 			'Author',
 			'Status',
 			'Progress',
@@ -920,20 +920,11 @@ export class QuestlineDashboardView extends ItemView {
 			const goal = row.createEl('td', {
 				cls: 'questline-projects-goal',
 			});
-			if (project.goal) {
-				this.noteTextLink(
-					goal,
-					project.goal.path,
-					project.goal.name,
-					`Open goal ${project.goal.name}`,
-					'questline-projects-goal-link',
-				);
-			} else {
-				goal.createSpan({
-					cls: 'questline-projects-none',
-					text: '—',
-				});
-			}
+			this.renderGoalLinks(
+				goal,
+				project.goals,
+				'questline-projects-goal-link',
+			);
 
 			row.createEl('td', {
 				cls: 'questline-projects-author',
@@ -1582,7 +1573,7 @@ export class QuestlineDashboardView extends ItemView {
 		const table = wrap.createEl('table', {
 			cls: 'questline-dashboard-table',
 		});
-		const headers = ['Project', 'Goal', 'Status', 'Progress', 'Tasks'];
+		const headers = ['Project', 'Goals', 'Status', 'Progress', 'Tasks'];
 		if (config.useTimekeep) headers.push('Hours');
 
 		const head = table.createEl('thead').createEl('tr');
@@ -1600,7 +1591,12 @@ export class QuestlineDashboardView extends ItemView {
 				`Open project ${project.name}`,
 				'questline-dashboard-table-link',
 			);
-			row.createEl('td', { text: project.goal?.name ?? '—' });
+			const goalCell = row.createEl('td');
+			this.renderGoalLinks(
+				goalCell,
+				project.goals,
+				'questline-dashboard-table-link',
+			);
 			row.createEl('td', { text: project.status ?? 'No status' });
 
 			const progress = row.createEl('td', {
@@ -1890,26 +1886,28 @@ export class QuestlineDashboardView extends ItemView {
 		);
 
 		const meta = card.createDiv({ cls: 'questline-dashboard-meta' });
-		const goal = project.goal;
-		if (goal) {
-			const item = meta.createSpan({
-				cls: 'questline-dashboard-meta-item',
-			});
-			const icon = item.createSpan({
-				cls: 'questline-dashboard-meta-icon',
-			});
-			setIcon(icon, 'target');
-			const goalLink = item.createEl('a', {
-				cls: 'internal-link questline-dashboard-goal-link',
-				text: `Goal: ${goal.name}`,
-				attr: { href: goal.path },
-			});
-			goalLink.addEventListener('click', (event) => {
-				event.stopPropagation();
-				revealOrOpen(this.plugin.app, goal.path, event);
-			});
-		} else {
+		if (project.goals.length === 0) {
 			addMetaItem(meta, 'unlink', 'No goal');
+		} else {
+			for (const goal of project.goals) {
+				const item = meta.createSpan({
+					cls: 'questline-dashboard-meta-item',
+				});
+				const icon = item.createSpan({
+					cls: 'questline-dashboard-meta-icon',
+				});
+				setIcon(icon, 'target');
+				const goalLink = this.noteTextLink(
+					item,
+					goal.path,
+					`Goal: ${goal.name}`,
+					`Open goal ${goal.name}`,
+					'questline-dashboard-goal-link',
+				);
+				goalLink.addEventListener('click', (event) => {
+					event.stopPropagation();
+				});
+			}
 		}
 		addMetaItem(
 			meta,
@@ -1979,6 +1977,33 @@ export class QuestlineDashboardView extends ItemView {
 		link.setText(text);
 
 		return link;
+	}
+
+	private renderGoalLinks(
+		containerEl: HTMLElement,
+		goals: readonly ProjectGoalLink[],
+		cls: string,
+	): void {
+		if (goals.length === 0) {
+			containerEl.createSpan({
+				cls: 'questline-projects-none',
+				text: '—',
+			});
+
+			return;
+		}
+
+		goals.forEach((goal, index) => {
+			if (index > 0) containerEl.createSpan({ text: ', ' });
+
+			this.noteTextLink(
+				containerEl,
+				goal.path,
+				goal.name,
+				`Open goal ${goal.name}`,
+				cls,
+			);
+		});
 	}
 }
 

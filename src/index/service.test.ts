@@ -222,9 +222,9 @@ describe('QuestlineIndexService', () => {
 		expect(after.projects.map((node) => node.path)).toEqual([
 			'efforts/Folio.md',
 		]);
-		expect(after.projectByPath.get('efforts/Folio.md')?.goalPath).toBe(
+		expect(after.projectByPath.get('efforts/Folio.md')?.goalPaths).toEqual([
 			'outcomes/Learn Python.md',
-		);
+		]);
 	});
 
 	it('keeps the cache when settings do not affect the index', async () => {

@@ -24,12 +24,21 @@ function goal(path: string, aliases: string[] = []): NoteSnapshot {
 
 function project(
 	path: string,
-	goalTarget: string | null,
+	goalTarget: string | readonly string[] | null,
 	extra: Record<string, unknown> = {},
 ): NoteSnapshot {
-	const body = goalTarget
-		? [`Goal:: [[${goalTarget}]]`, 'tags:: #project'].join('\n')
-		: 'tags:: #project';
+	const targets =
+		goalTarget === null
+			? []
+			: Array.isArray(goalTarget)
+				? goalTarget
+				: [goalTarget];
+	const body = [
+		...(targets.length > 0
+			? [`Goal:: ${targets.map((target) => `[[${target}]]`).join(', ')}`]
+			: []),
+		'tags:: #project',
+	].join('\n');
 
 	return note(path, { status: 'In Progress', ...extra }, body);
 }
@@ -124,10 +133,37 @@ describe('buildIndex', () => {
 			project('by-unknown.md', 'Missing Goal'),
 		]);
 
-		expect(index.projectByPath.get('by-name.md')?.goalPath).toBe(goalPath);
-		expect(index.projectByPath.get('by-alias.md')?.goalPath).toBe(goalPath);
-		expect(index.projectByPath.get('by-path.md')?.goalPath).toBe(goalPath);
-		expect(index.projectByPath.get('by-unknown.md')?.goalPath).toBeNull();
+		expect(index.projectByPath.get('by-name.md')?.goalPaths).toEqual([
+			goalPath,
+		]);
+		expect(index.projectByPath.get('by-alias.md')?.goalPaths).toEqual([
+			goalPath,
+		]);
+		expect(index.projectByPath.get('by-path.md')?.goalPaths).toEqual([
+			goalPath,
+		]);
+		expect(index.projectByPath.get('by-unknown.md')?.goalPaths).toEqual([]);
+	});
+
+	it('links a project to multiple goals without duplicates', () => {
+		const first = 'goals/A.md';
+		const second = 'goals/B.md';
+		const index = buildIndex([
+			goal(first, ['A']),
+			goal(second, ['B']),
+			project('projects/shared.md', ['A', 'a', 'B', 'A']),
+		]);
+
+		expect(index.projectByPath.get('projects/shared.md')?.goalPaths).toEqual([
+			first,
+			second,
+		]);
+		expect(index.goalByPath.get(first)?.projectPaths).toEqual([
+			'projects/shared.md',
+		]);
+		expect(index.goalByPath.get(second)?.projectPaths).toEqual([
+			'projects/shared.md',
+		]);
 	});
 
 	it('links projects back to their goal in sorted order', () => {
@@ -142,7 +178,9 @@ describe('buildIndex', () => {
 			'projects/a.md',
 			'projects/z.md',
 		]);
-		expect(index.projectByPath.get('projects/orphan.md')?.goalPath).toBeNull();
+		expect(index.projectByPath.get('projects/orphan.md')?.goalPaths).toEqual(
+			[],
+		);
 	});
 
 	it('indexes a note that has both tags as a goal only', () => {
@@ -161,7 +199,9 @@ describe('buildIndex', () => {
 		]);
 
 		expect(index.projects).toHaveLength(2);
-		expect(index.projects.every((node) => node.goalPath === null)).toBe(true);
+		expect(
+			index.projects.every((node) => node.goalPaths.length === 0),
+		).toBe(true);
 	});
 });
 

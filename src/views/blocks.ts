@@ -147,11 +147,13 @@ class ProjectProgressBlock extends QuestlineBlock {
 			);
 		}
 		stats.push(`Status: ${view.status ?? 'No status'}`);
-		stats.push(
-			view.goal
-				? { text: `Goal: ${view.goal.name}`, path: view.goal.path }
-				: 'No goal',
-		);
+		if (view.goals.length === 0) {
+			stats.push('No goal');
+		} else {
+			for (const goal of view.goals) {
+				stats.push({ text: `Goal: ${goal.name}`, path: goal.path });
+			}
+		}
 		if (view.workHours !== null) {
 			stats.push(`${formatHours(view.workHours)} tracked`);
 		}

@@ -43,7 +43,7 @@ describe('resolveNote', () => {
 		expect(fields.timespan).toBe('?Infinite');
 		expect(fields.aliases).toEqual(['Learn Python']);
 		expect(fields.created).toBe('2025-01-29 20:10:41');
-		expect(fields.goal).toBeNull();
+		expect(fields.goals).toEqual([]);
 	});
 
 	it('prefers category over the legacy status for goals', () => {
@@ -78,11 +78,39 @@ describe('resolveNote', () => {
 		expect(fields.category).toBeNull();
 		expect(fields.subtitle).toContain('print-ready booklet');
 		expect(fields.authors).toEqual(['Aaqil', 'Shabry']);
-		expect(fields.goal).toEqual({
-			target: '2025-01-29 - Learn Python',
-			display: 'Learn Python',
-			heading: null,
+		expect(fields.goals).toEqual([
+			{
+				target: '2025-01-29 - Learn Python',
+				display: 'Learn Python',
+				heading: null,
+			},
+		]);
+	});
+
+	it('resolves multiple goal links from frontmatter and inline values', () => {
+		const frontmatter = resolveNote({
+			path: 'project.md',
+			frontmatter: {
+				tags: 'project',
+				status: 'In Progress',
+				goal: ['[[A]]', '[[B|Second]]'],
+			},
+			body: 'Goal:: [[Ignored]]',
 		});
+		const inline = resolveNote({
+			path: 'project.md',
+			frontmatter: { tags: 'project', status: 'In Progress' },
+			body: 'Goal:: [[A]], [[B|Second]], [[C#Part]]',
+		});
+
+		expect(frontmatter.goals.map((link) => link.target)).toEqual(['A', 'B']);
+		expect(frontmatter.goals[1]?.display).toBe('Second');
+		expect(inline.goals.map((link) => link.target)).toEqual([
+			'A',
+			'B',
+			'C',
+		]);
+		expect(inline.goals[2]?.heading).toBe('Part');
 	});
 
 	it('reads a project tag from an inline tags field and the marker from Class', () => {
@@ -159,7 +187,7 @@ describe('resolveNote', () => {
 		expect(fields.hasProjectMarker).toBe(true);
 		expect(fields.status).toBe('Waiting');
 		expect(fields.subtitle).toBe('A naming convention.');
-		expect(fields.goal?.target).toBe('2024-10-24 - Learn AutoHotkey v2');
+		expect(fields.goals[0]?.target).toBe('2024-10-24 - Learn AutoHotkey v2');
 	});
 
 	it('ignores the legacy expression fields', () => {
@@ -197,8 +225,8 @@ describe('resolveNote', () => {
 			].join('\n'),
 		});
 
-		expect(fields.goal?.target).toBe('2026-10-10 - HomeLab');
-		expect(fields.goal?.display).toBe('HomeLab');
+		expect(fields.goals[0]?.target).toBe('2026-10-10 - HomeLab');
+		expect(fields.goals[0]?.display).toBe('HomeLab');
 		expect(fields.timespan).toBe('6 Months');
 	});
 
@@ -292,7 +320,7 @@ describe('resolveNote', () => {
 			hasProjectMarker: false,
 			category: null,
 			status: null,
-			goal: null,
+			goals: [],
 			projectTemplate: null,
 			timespan: null,
 			reason: null,

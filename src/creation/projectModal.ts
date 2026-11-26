@@ -5,7 +5,6 @@ import {
 	Notice,
 	Setting,
 	type App,
-	type ButtonComponent,
 	type TextComponent,
 } from 'obsidian';
 import { withoutDate } from '../index/names';
@@ -24,12 +23,6 @@ import {
 	defaultProjectTemplatePath,
 	goalTemplatePath,
 } from './templates';
-
-interface GoalChoice {
-	goal: GoalNode | null;
-}
-
-const NO_GOAL: GoalChoice = { goal: null };
 
 interface ProjectInputs {
 	title?: TextComponent;
@@ -51,11 +44,11 @@ function goalLabel(goal: GoalNode): string {
 	return alias || title;
 }
 
-class GoalPickModal extends FuzzySuggestModal<GoalChoice> {
+class GoalPickModal extends FuzzySuggestModal<GoalNode> {
 	constructor(
 		app: App,
 		private readonly goals: readonly GoalNode[],
-		private readonly onPick: (goal: GoalNode | null) => void,
+		private readonly onPick: (goal: GoalNode) => void,
 	) {
 		super(app);
 		this.emptyStateText = 'No goal matches that.';
@@ -63,19 +56,19 @@ class GoalPickModal extends FuzzySuggestModal<GoalChoice> {
 
 	async onOpen(): Promise<void> {
 		await super.onOpen();
-		this.setPlaceholder('Jump to a goal.');
+		this.setPlaceholder('Add a goal.');
 	}
 
-	getItems(): GoalChoice[] {
-		return [NO_GOAL, ...this.goals.map((goal) => ({ goal }))];
+	getItems(): GoalNode[] {
+		return [...this.goals];
 	}
 
-	getItemText(item: GoalChoice): string {
-		return item.goal ? goalLabel(item.goal) : 'No goal';
+	getItemText(item: GoalNode): string {
+		return goalLabel(item);
 	}
 
-	onChooseItem(item: GoalChoice): void {
-		this.onPick(item.goal);
+	onChooseItem(item: GoalNode): void {
+		this.onPick(item);
 	}
 }
 
@@ -91,22 +84,34 @@ export class ProjectModal extends Modal {
 
 	onOpen(): void {
 		const { contentEl } = this;
+		const app = this.app;
+		const goals = this.goals;
 		contentEl.empty();
 		this.setTitle('New project');
 		this.modalEl.addClass('questline-modal');
 
 		const inputs: ProjectInputs = {};
-		let selectedGoal: GoalNode | null = null;
+		let selectedGoals: GoalNode[] = [];
+		let selectedEl: HTMLElement | null = null;
 		let status = this.config.projectStatuses[0] ?? 'Todo';
 		let templateDefault = defaultProjectTemplatePath(
 			this.app,
 			this.config,
 			null,
 		);
-		let goalButton: ButtonComponent | null = null;
 		let includeProgress = true;
 		const timekeepAvailable = isTimekeepInstalled(this.app);
 		let includeTimekeep = timekeepAvailable;
+
+		const goalTemplateTarget = (): string | null => {
+			for (const goal of selectedGoals) {
+				if (goal.fields.projectTemplate) {
+					return goal.fields.projectTemplate;
+				}
+			}
+
+			return null;
+		};
 
 		const updateTemplateDefault = (): void => {
 			const current = inputs.template?.getValue() ?? '';
@@ -115,18 +120,64 @@ export class ProjectModal extends Modal {
 			templateDefault = defaultProjectTemplatePath(
 				this.app,
 				this.config,
-				selectedGoal?.fields.projectTemplate ?? null,
+				goalTemplateTarget(),
 			);
 			inputs.template?.setValue(templateDefault);
 		};
 
-		const pickGoal = (): void => {
-			new GoalPickModal(this.app, this.goals, (goal) => {
-				selectedGoal = goal;
-				goalButton?.setButtonText(goal ? goalLabel(goal) : 'No goal');
+		function renderSelectedGoals(): void {
+			if (!selectedEl) return;
+
+			selectedEl.empty();
+			if (selectedGoals.length === 0) {
+				selectedEl.createDiv({
+					cls: 'questline-goal-empty',
+					text: 'No goals selected.',
+				});
+
+				return;
+			}
+
+			for (const goal of selectedGoals) {
+				const row = selectedEl.createDiv({
+					cls: 'questline-goal-chip',
+				});
+				row.createSpan({
+					cls: 'questline-goal-chip-label',
+					text: goalLabel(goal),
+				});
+				const remove = row.createEl('button', {
+					cls: 'questline-goal-chip-remove',
+					text: '×',
+					attr: {
+						type: 'button',
+						'aria-label': `Remove ${goalLabel(goal)}`,
+					},
+				});
+				remove.addEventListener('click', (event) => {
+					event.preventDefault();
+					event.stopPropagation();
+					selectedGoals = selectedGoals.filter(
+						(item) => item.path !== goal.path,
+					);
+					renderSelectedGoals();
+					updateTemplateDefault();
+				});
+			}
+		}
+
+		function pickGoal(): void {
+			const available = goals.filter(
+				(goal) =>
+					!selectedGoals.some((item) => item.path === goal.path),
+			);
+
+			new GoalPickModal(app, available, (goal) => {
+				selectedGoals = [...selectedGoals, goal];
+				renderSelectedGoals();
 				updateTemplateDefault();
 			}).open();
-		};
+		}
 
 		const titleSetting = new Setting(contentEl)
 			.setName('Title')
@@ -138,12 +189,18 @@ export class ProjectModal extends Modal {
 		titleSetting.settingEl.addClass('questline-title-setting');
 
 		new Setting(contentEl)
-			.setName('Goal')
-			.setDesc('Optional. A project without a goal stands alone.')
+			.setName('Goals')
+			.setDesc('Optional. Add every goal this project serves.')
 			.addButton((button) => {
-				goalButton = button;
-				button.setButtonText('No goal').onClick(pickGoal);
+				button
+					.setButtonText('Add goal')
+					.setDisabled(goals.length === 0)
+					.onClick(pickGoal);
 			});
+		selectedEl = contentEl.createDiv({
+			cls: 'questline-goal-picker',
+		});
+		renderSelectedGoals();
 
 		new Setting(contentEl)
 			.setName('Status')
@@ -241,7 +298,7 @@ export class ProjectModal extends Modal {
 					.onClick(() =>
 						this.submit(
 							inputs,
-							selectedGoal,
+							selectedGoals,
 							status,
 							includeProgress,
 							includeTimekeep,
@@ -258,7 +315,7 @@ export class ProjectModal extends Modal {
 
 	private submit(
 		inputs: ProjectInputs,
-		goal: GoalNode | null,
+		goals: readonly GoalNode[],
 		status: string,
 		includeProgress: boolean,
 		includeTimekeep: boolean,
@@ -271,23 +328,29 @@ export class ProjectModal extends Modal {
 			return;
 		}
 
-		const goalTarget = goal?.fields.projectTemplate ?? null;
-		if (goalTarget && goalTemplatePath(this.app, goalTarget).missing) {
-			announceMissingTemplate(goalTarget);
+		const seenTemplates = new Set<string>();
+		for (const goal of goals) {
+			const target = goal.fields.projectTemplate;
+			if (
+				target &&
+				!seenTemplates.has(target) &&
+				goalTemplatePath(this.app, target).missing
+			) {
+				seenTemplates.add(target);
+				announceMissingTemplate(target);
+			}
 		}
 
-		const link: ProjectGoalLink | null = goal
-			? {
-					path: goal.path,
-					name: goal.name,
-					display: goal.aliases[0],
-				}
-			: null;
+		const links: ProjectGoalLink[] = goals.map((goal) => ({
+			path: goal.path,
+			name: goal.name,
+			display: goal.aliases[0],
+		}));
 
 		this.close();
 		this.onCreate({
 			title,
-			goal: link,
+			goals: links,
 			status,
 			author: inputs.author?.getValue() ?? '',
 			subtitle: inputs.subtitle?.getValue() ?? '',

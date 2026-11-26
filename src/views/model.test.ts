@@ -61,7 +61,7 @@ function goal(
 
 function project(
 	path: string,
-	goalPath: string | null = 'goals/Learn.md',
+	goalPaths: string | readonly string[] | null = 'goals/Learn.md',
 	name = 'Ship the site',
 	status: string | null = 'Todo',
 ): ProjectNode {
@@ -78,7 +78,12 @@ function project(
 			},
 			body: '',
 		}),
-		goalPath,
+		goalPaths:
+			goalPaths === null
+				? []
+				: typeof goalPaths === 'string'
+					? [goalPaths]
+					: [...goalPaths],
 	};
 }
 function indexOf(
@@ -148,6 +153,31 @@ describe('goalProgressView', () => {
 
 		expect(view.counts.total).toBe(1);
 		expect(view.projectCount).toBe(1);
+	});
+
+	it('counts a shared project in every linked goal', () => {
+		const first = goal('goals/A.md', { tags: ['goal'] }, [
+			'projects/Shared.md',
+		]);
+		const second = goal('goals/B.md', { tags: ['goal'] }, [
+			'projects/Shared.md',
+		]);
+		const index = indexOf(
+			[first, second],
+			[project('projects/Shared.md', ['goals/A.md', 'goals/B.md'])],
+			[
+				snapshot('goals/A.md'),
+				snapshot('goals/B.md'),
+				snapshot('projects/Shared.md', [task(0, 'x'), task(1, ' ')]),
+			],
+		);
+
+		for (const node of [first, second]) {
+			const view = goalProgressView(index, node, DEFAULT_CONFIG, NOW);
+
+			expect(view.counts).toEqual({ completed: 1, total: 2, percent: 50 });
+			expect(view.projectCount).toBe(1);
+		}
 	});
 
 	it('uses manual progress and target when both are present', () => {
@@ -282,12 +312,38 @@ describe('projectProgressView', () => {
 
 		expect(view.counts).toEqual({ completed: 1, total: 2, percent: 50 });
 		expect(view.status).toBe('Todo');
-		expect(view.goal).toEqual({
-			path: 'goals/Learn.md',
-			name: 'Learn Python',
-		});
+		expect(view.goals).toEqual([
+			{
+				path: 'goals/Learn.md',
+				name: 'Learn Python',
+			},
+		]);
 		expect(view.workHours).toBe(2);
 		expect(view.empty).toBe(false);
+	});
+
+	it('carries every resolved goal', () => {		const node = project('projects/Site.md', [
+			'goals/Learn.md',
+			'goals/Other.md',
+		]);
+		const view = projectProgressView(
+			indexOf(
+				[
+					goal('goals/Learn.md', { tags: ['goal'] }),
+					goal('goals/Other.md', { tags: ['goal'] }),
+				],
+				[node],
+				[snapshot('projects/Site.md', [task(0, ' ')])],
+			),
+			node,
+			DEFAULT_CONFIG,
+			NOW,
+		);
+
+		expect(view.goals.map((item) => item.path)).toEqual([
+			'goals/Learn.md',
+			'goals/Other.md',
+		]);
 	});
 
 	it('works for a standalone project', () => {
@@ -299,7 +355,7 @@ describe('projectProgressView', () => {
 			NOW,
 		);
 
-		expect(view.goal).toBeNull();
+		expect(view.goals).toEqual([]);
 		expect(view.counts.total).toBe(1);
 	});
 
