@@ -242,6 +242,9 @@ describe('resolveConfig', () => {
 		expect(resolveConfig({ projectsStyle: 'cards' }).projectsStyle).toBe(
 			'cards',
 		);
+		expect(resolveConfig({ projectsStyle: 'board' }).projectsStyle).toBe(
+			'board',
+		);
 
 		const invalid = resolveConfig({
 			projectsStyle: 'fancy' as typeof DEFAULT_SETTINGS.projectsStyle,
@@ -261,6 +264,7 @@ describe('resolveConfig', () => {
 			resolveConfig({ goalsStyle: 'cards' }),
 			resolveConfig({ goalsStyle: 'board' }),
 			resolveConfig({ projectsStyle: 'cards' }),
+			resolveConfig({ projectsStyle: 'board' }),
 			resolveConfig({ goalCategories: ['Health'] }),
 		];
 

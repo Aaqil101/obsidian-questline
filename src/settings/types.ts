@@ -29,7 +29,7 @@ export type DashboardStyle = 'minimal' | 'cards' | 'timeline';
 export type GoalsStyle = 'list' | 'cards' | 'board';
 
 /** How the Projects tab lists projects. */
-export type ProjectsStyle = 'table' | 'cards';
+export type ProjectsStyle = 'table' | 'cards' | 'board';
 
 /** Whether progress counts every task or only the tasks under one heading. */
 export type TaskScopeMode = 'all' | 'heading';
@@ -259,7 +259,7 @@ function cleanGoalsStyle(value: unknown): GoalsStyle {
 }
 
 function cleanProjectsStyle(value: unknown): ProjectsStyle {
-	return value === 'table' || value === 'cards'
+	return value === 'table' || value === 'cards' || value === 'board'
 		? value
 		: DEFAULT_SETTINGS.projectsStyle;
 }

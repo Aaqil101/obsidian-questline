@@ -767,29 +767,34 @@ export class QuestlineDashboardView extends ItemView {
 		}
 		author.value = this.projectList.author;
 
-		const sort = controls.createEl('select', {
-			cls: 'questline-projects-select',
-			attr: { 'aria-label': 'Sort projects' },
-		});
-		for (const option of PROJECT_SORT_OPTIONS) {
-			sort.createEl('option', {
-				text: option.label,
-				attr: { value: option.value },
+		let sort: HTMLSelectElement | null = null;
+		let direction: HTMLButtonElement | null = null;
+
+		if (config.projectsStyle !== 'board') {
+			sort = controls.createEl('select', {
+				cls: 'questline-projects-select',
+				attr: { 'aria-label': 'Sort projects' },
+			});
+			for (const option of PROJECT_SORT_OPTIONS) {
+				sort.createEl('option', {
+					text: option.label,
+					attr: { value: option.value },
+				});
+			}
+			sort.value = this.projectList.sort;
+
+			direction = controls.createEl('button', {
+				cls: 'questline-projects-button',
+				text: this.projectList.direction === 'asc' ? '↑' : '↓',
+				attr: {
+					type: 'button',
+					title:
+						this.projectList.direction === 'asc'
+							? 'Ascending'
+							: 'Descending',
+				},
 			});
 		}
-		sort.value = this.projectList.sort;
-
-		const direction = controls.createEl('button', {
-			cls: 'questline-projects-button',
-			text: this.projectList.direction === 'asc' ? '↑' : '↓',
-			attr: {
-				type: 'button',
-				title:
-					this.projectList.direction === 'asc'
-						? 'Ascending'
-						: 'Descending',
-			},
-		});
 
 		const clear = controls.createEl('button', {
 			cls: 'questline-projects-button',
@@ -816,21 +821,29 @@ export class QuestlineDashboardView extends ItemView {
 			this.projectList.author = author.value;
 			refresh();
 		});
-		sort.addEventListener('change', () => {
-			const next = PROJECT_SORT_OPTIONS.find(
-				(option) => option.value === sort.value,
-			);
-			this.projectList.sort = next?.value ?? DEFAULT_PROJECT_LIST_STATE.sort;
-			refresh();
-		});
-		direction.addEventListener('click', () => {
-			this.projectList.direction =
-				this.projectList.direction === 'asc' ? 'desc' : 'asc';
-			const ascending = this.projectList.direction === 'asc';
-			direction.setText(ascending ? '↑' : '↓');
-			direction.setAttr('title', ascending ? 'Ascending' : 'Descending');
-			refresh();
-		});
+		if (sort) {
+			sort.addEventListener('change', () => {
+				const next = PROJECT_SORT_OPTIONS.find(
+					(option) => option.value === sort?.value,
+				);
+				this.projectList.sort =
+					next?.value ?? DEFAULT_PROJECT_LIST_STATE.sort;
+				refresh();
+			});
+		}
+		if (direction) {
+			direction.addEventListener('click', () => {
+				this.projectList.direction =
+					this.projectList.direction === 'asc' ? 'desc' : 'asc';
+				const ascending = this.projectList.direction === 'asc';
+				direction?.setText(ascending ? '↑' : '↓');
+				direction?.setAttr(
+					'title',
+					ascending ? 'Ascending' : 'Descending',
+				);
+				refresh();
+			});
+		}
 		clear.addEventListener('click', () => {
 			this.projectList.search = DEFAULT_PROJECT_LIST_STATE.search;
 			this.projectList.status = DEFAULT_PROJECT_LIST_STATE.status;
@@ -840,9 +853,11 @@ export class QuestlineDashboardView extends ItemView {
 			search.value = this.projectList.search;
 			status.value = this.projectList.status;
 			author.value = this.projectList.author;
-			sort.value = this.projectList.sort;
-			direction.setText('↑');
-			direction.setAttr('title', 'Ascending');
+			if (sort) sort.value = this.projectList.sort;
+			if (direction) {
+				direction.setText('↑');
+				direction.setAttr('title', 'Ascending');
+			}
 			refresh();
 		});
 
@@ -888,6 +903,11 @@ export class QuestlineDashboardView extends ItemView {
 		if (visible.length === 0) {
 			renderEmpty(containerEl, 'No projects match these filters.');
 
+			return;
+		}
+
+		if (config.projectsStyle === 'board') {
+			this.renderProjectsBoard(containerEl, visible, config);
 			return;
 		}
 
@@ -1959,11 +1979,45 @@ export class QuestlineDashboardView extends ItemView {
 		}
 	}
 
+	private renderProjectsBoard(
+		containerEl: HTMLElement,
+		projects: readonly ProjectOverviewItem[],
+		config: QuestlineConfig,
+	): void {
+		const sorted = sortGoalProjects(
+			projects,
+			'name',
+			'asc',
+			config.projectStatuses,
+		);
+		const columns = boardColumns(
+			sorted,
+			config.projectStatuses,
+			(project) => project.status,
+			'No status',
+		);
+
+		renderBoard(containerEl, columns, {
+			laneClass: (column) => statusClass(column.value),
+			emptyText: 'No projects',
+			renderCard: (cards, project) => {
+				this.renderProjectCard(
+					cards,
+					project,
+					config,
+					true,
+					true,
+				);
+			},
+		});
+	}
+
 	private renderProjectCard(
 		containerEl: HTMLElement,
 		project: ProjectOverviewItem,
 		config: QuestlineConfig,
 		interactive = true,
+		fullMeta = false,
 	): void {
 		const card = containerEl.createDiv({
 			cls:
@@ -2039,8 +2093,10 @@ export class QuestlineDashboardView extends ItemView {
 		);
 		if (project.authors.length > 0) {
 			addMetaItem(meta, 'user', project.authors.join(', '));
+		} else if (fullMeta) {
+			addMetaItem(meta, 'user', 'None');
 		}
-		if (project.hours !== null && project.hours > 0) {
+		if (project.hours !== null && (project.hours > 0 || fullMeta)) {
 			addMetaItem(
 				meta,
 				'clock',

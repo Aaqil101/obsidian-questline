@@ -2025,3 +2025,18 @@
 	padding-top: 6px;
 	border-top: 1px solid var(--background-modifier-border);
 }
+
+/* Projects board */
+
+.questline-board-lane[class*='questline-dashboard-status--'] {
+	border-top: 3px solid var(--questline-status, var(--background-modifier-border));
+}
+
+.questline-board-cards .questline-dashboard-project-card {
+	width: 100%;
+}
+
+.questline-board-cards .questline-dashboard-project-card .questline-dashboard-card-header {
+	align-items: flex-start;
+}
+

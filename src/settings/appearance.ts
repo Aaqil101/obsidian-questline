@@ -65,16 +65,21 @@ export function appearanceGroup(host: SettingsHost): SettingDefinitionGroup {
 			),
 			renderRow(
 				'Projects style',
-				'Table shows every project in sortable columns. Cards shows the same filtered and sorted projects as a grid of cards.',
+				'Table shows every project in sortable columns. Cards shows a filtered and sorted grid. Board shows projects in status lanes.',
 				(setting) => {
 					setting.addDropdown((dropdown) =>
 						dropdown
 							.addOption('table', 'Table')
 							.addOption('cards', 'Cards')
+							.addOption('board', 'Board')
 							.setValue(plugin.settings.projectsStyle)
 							.onChange((value) => {
 								const projectsStyle: ProjectsStyle =
-									value === 'cards' ? 'cards' : 'table';
+									value === 'cards'
+										? 'cards'
+										: value === 'board'
+											? 'board'
+											: 'table';
 								void plugin.updateSettings({
 									projectsStyle,
 								});
