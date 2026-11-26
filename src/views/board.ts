@@ -1,0 +1,137 @@
+/** Shared lane grouping and rendering for the Goals and Projects boards. */
+import { compareText } from './projects';
+
+export interface BoardColumn<T> {
+	/** Configured or first-seen label, or null for the no-value lane. */
+	value: string | null;
+	/** Text shown in the lane header. */
+	label: string;
+	items: T[];
+}
+
+export interface BoardRenderOptions<T> {
+	/** Render one card inside a lane body. */
+	renderCard: (containerEl: HTMLElement, item: T) => void;
+	/** Extra classes for a lane, such as a status or category color. */
+	laneClass?: (column: BoardColumn<T>) => string;
+	/** Message shown in a lane with no cards. Defaults to `No items`. */
+	emptyText?: string;
+}
+
+/**
+ * Group items into ordered lanes.
+ *
+ * Configured values always appear, in their configured order. Values from the
+ * items that are not configured follow in text order, using the first spelling
+ * seen. Items without a value go to a final lane that only exists when needed.
+ * Item order is preserved inside every lane.
+ */
+export function boardColumns<T>(
+	items: readonly T[],
+	values: readonly string[],
+	readValue: (item: T) => string | null,
+	noValueLabel = 'No value',
+): BoardColumn<T>[] {
+	const known = new Map<string, BoardColumn<T>>();
+	const configured: BoardColumn<T>[] = [];
+
+	for (const value of values) {
+		const label = value.trim();
+		if (!label) continue;
+
+		const key = label.toLowerCase();
+		if (known.has(key)) continue;
+
+		const column: BoardColumn<T> = { value: label, label, items: [] };
+		known.set(key, column);
+		configured.push(column);
+	}
+
+	const unknown = new Map<string, BoardColumn<T>>();
+	const noValue: BoardColumn<T> = {
+		value: null,
+		label: noValueLabel,
+		items: [],
+	};
+
+	for (const item of items) {
+		const value = readValue(item)?.trim() ?? '';
+		if (!value) {
+			noValue.items.push(item);
+			continue;
+		}
+
+		const key = value.toLowerCase();
+		const column = known.get(key);
+		if (column) {
+			column.items.push(item);
+			continue;
+		}
+
+		const other = unknown.get(key);
+		if (other) {
+			other.items.push(item);
+			continue;
+		}
+
+		const created: BoardColumn<T> = {
+			value,
+			label: value,
+			items: [item],
+		};
+		unknown.set(key, created);
+	}
+
+	const columns = [
+		...configured,
+		...[...unknown.values()].sort((left, right) =>
+			compareText(left.label, right.label),
+		),
+	];
+	if (noValue.items.length > 0) columns.push(noValue);
+
+	return columns;
+}
+
+/** Paint a horizontal board of lanes and cards. */
+export function renderBoard<T>(
+	containerEl: HTMLElement,
+	columns: readonly BoardColumn<T>[],
+	options: BoardRenderOptions<T>,
+): void {
+	const board = containerEl.createDiv({ cls: 'questline-board' });
+
+	for (const column of columns) {
+		const extra = options.laneClass?.(column) ?? '';
+		const lane = board.createDiv({
+			cls: `questline-board-lane${extra ? ` ${extra}` : ''}`,
+			attr: { 'data-lane': column.value ?? '' },
+		});
+		if (column.value === null) lane.setAttr('data-lane-none', 'true');
+
+		const header = lane.createDiv({
+			cls: 'questline-board-lane-header',
+		});
+		header.createSpan({
+			cls: 'questline-board-lane-title',
+			text: column.label,
+		});
+		header.createSpan({
+			cls: 'questline-board-count',
+			text: String(column.items.length),
+		});
+
+		const cards = lane.createDiv({ cls: 'questline-board-cards' });
+		if (column.items.length === 0) {
+			cards.createDiv({
+				cls: 'questline-board-empty',
+				text: options.emptyText ?? 'No items',
+			});
+			continue;
+		}
+
+		for (const item of column.items) {
+			options.renderCard(cards, item);
+		}
+	}
+}
