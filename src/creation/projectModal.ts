@@ -1,13 +1,11 @@
 /** The New project modal and its goal picker. Nothing is written on cancel. */
 import {
-	FuzzySuggestModal,
 	Modal,
 	Notice,
 	Setting,
 	type App,
 	type TextComponent,
 } from 'obsidian';
-import { withoutDate } from '../index/names';
 import type { GoalNode } from '../index/types';
 import {
 	attachFolderSuggest,
@@ -17,7 +15,9 @@ import {
 } from '../settings/folderPicker';
 import type { QuestlineConfig } from '../settings/types';
 import { isTimekeepInstalled } from '../timekeep/timekeep';
-import type { ProjectDraft, ProjectGoalLink } from './plan';
+import { projectGoalLink } from './edit';
+import { GoalPicker } from './goalPicker';
+import type { ProjectDraft } from './plan';
 import {
 	announceMissingTemplate,
 	defaultProjectTemplatePath,
@@ -32,46 +32,6 @@ interface ProjectInputs {
 	folder?: TextComponent;
 }
 
-/** A goal is listed by its alias and title, so either one finds it. */
-function goalLabel(goal: GoalNode): string {
-	const alias = goal.aliases[0]?.trim();
-	const title = withoutDate(goal.name);
-
-	if (alias && alias.toLowerCase() !== title.toLowerCase()) {
-		return `${alias} (${title})`;
-	}
-
-	return alias || title;
-}
-
-class GoalPickModal extends FuzzySuggestModal<GoalNode> {
-	constructor(
-		app: App,
-		private readonly goals: readonly GoalNode[],
-		private readonly onPick: (goal: GoalNode) => void,
-	) {
-		super(app);
-		this.emptyStateText = 'No goal matches that.';
-	}
-
-	async onOpen(): Promise<void> {
-		await super.onOpen();
-		this.setPlaceholder('Add a goal.');
-	}
-
-	getItems(): GoalNode[] {
-		return [...this.goals];
-	}
-
-	getItemText(item: GoalNode): string {
-		return goalLabel(item);
-	}
-
-	onChooseItem(item: GoalNode): void {
-		this.onPick(item);
-	}
-}
-
 export class ProjectModal extends Modal {
 	constructor(
 		app: App,
@@ -84,7 +44,6 @@ export class ProjectModal extends Modal {
 
 	onOpen(): void {
 		const { contentEl } = this;
-		const app = this.app;
 		const goals = this.goals;
 		contentEl.empty();
 		this.setTitle('New project');
@@ -92,7 +51,7 @@ export class ProjectModal extends Modal {
 
 		const inputs: ProjectInputs = {};
 		let selectedGoals: GoalNode[] = [];
-		let selectedEl: HTMLElement | null = null;
+		let picker: GoalPicker | null = null;
 		let status = this.config.projectStatuses[0] ?? 'Todo';
 		let templateDefault = defaultProjectTemplatePath(
 			this.app,
@@ -125,60 +84,6 @@ export class ProjectModal extends Modal {
 			inputs.template?.setValue(templateDefault);
 		};
 
-		function renderSelectedGoals(): void {
-			if (!selectedEl) return;
-
-			selectedEl.empty();
-			if (selectedGoals.length === 0) {
-				selectedEl.createDiv({
-					cls: 'questline-goal-empty',
-					text: 'No goals selected.',
-				});
-
-				return;
-			}
-
-			for (const goal of selectedGoals) {
-				const row = selectedEl.createDiv({
-					cls: 'questline-goal-chip',
-				});
-				row.createSpan({
-					cls: 'questline-goal-chip-label',
-					text: goalLabel(goal),
-				});
-				const remove = row.createEl('button', {
-					cls: 'questline-goal-chip-remove',
-					text: '×',
-					attr: {
-						type: 'button',
-						'aria-label': `Remove ${goalLabel(goal)}`,
-					},
-				});
-				remove.addEventListener('click', (event) => {
-					event.preventDefault();
-					event.stopPropagation();
-					selectedGoals = selectedGoals.filter(
-						(item) => item.path !== goal.path,
-					);
-					renderSelectedGoals();
-					updateTemplateDefault();
-				});
-			}
-		}
-
-		function pickGoal(): void {
-			const available = goals.filter(
-				(goal) =>
-					!selectedGoals.some((item) => item.path === goal.path),
-			);
-
-			new GoalPickModal(app, available, (goal) => {
-				selectedGoals = [...selectedGoals, goal];
-				renderSelectedGoals();
-				updateTemplateDefault();
-			}).open();
-		}
-
 		const titleSetting = new Setting(contentEl)
 			.setName('Title')
 			.setDesc('The project name, used for the note and its filename.')
@@ -195,12 +100,20 @@ export class ProjectModal extends Modal {
 				button
 					.setButtonText('Add goal')
 					.setDisabled(goals.length === 0)
-					.onClick(pickGoal);
+					.onClick(() => picker?.pick());
 			});
-		selectedEl = contentEl.createDiv({
+		const selectedEl = contentEl.createDiv({
 			cls: 'questline-goal-picker',
 		});
-		renderSelectedGoals();
+		picker = new GoalPicker(selectedEl, {
+			app: this.app,
+			goals,
+			selected: selectedGoals,
+			onChange: (next) => {
+				selectedGoals = next;
+				updateTemplateDefault();
+			},
+		});
 
 		new Setting(contentEl)
 			.setName('Status')
@@ -341,11 +254,7 @@ export class ProjectModal extends Modal {
 			}
 		}
 
-		const links: ProjectGoalLink[] = goals.map((goal) => ({
-			path: goal.path,
-			name: goal.name,
-			display: goal.aliases[0],
-		}));
+		const links = goals.map(projectGoalLink);
 
 		this.close();
 		this.onCreate({
