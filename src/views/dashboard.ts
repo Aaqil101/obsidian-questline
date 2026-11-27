@@ -7,6 +7,7 @@ import {
 	type WorkspaceLeaf,
 } from 'obsidian';
 import { openGoalModal, openProjectModal } from '../creation/commands';
+import { openGoalEditor, openProjectEditor } from '../creation/editCommands';
 import type QuestlinePlugin from '../main';
 import type { QuestlineConfig } from '../settings/types';
 import {
@@ -668,27 +669,43 @@ export class QuestlineDashboardView extends ItemView {
 		}
 
 		for (const goal of visible) {
-			const row = this.noteLink(
-				table,
-				goal.path,
-				`Open goal ${goal.name}`,
-				`questline-goals-row${goal.archived ? ' is-archived' : ''}`,
-			);
+			const row = table.createDiv({
+				cls: `questline-goals-row${goal.archived ? ' is-archived' : ''}`,
+			});
+			row.addEventListener('click', (event) => {
+				revealOrOpen(this.plugin.app, goal.path, event);
+			});
 
 			const title = row.createDiv({
 				cls: 'questline-goals-cell questline-goals-cell--title',
 				attr: { 'data-label': 'Goal' },
 			});
-			title.createSpan({
-				cls: 'questline-goals-title',
-				text: goal.name,
+			const titleLine = title.createDiv({
+				cls: 'questline-goals-title-row',
+			});
+			const titleLink = this.noteTextLink(
+				titleLine,
+				goal.path,
+				goal.name,
+				`Open goal ${goal.name}`,
+				'questline-goals-title',
+			);
+			titleLink.addEventListener('click', (event) => {
+				event.stopPropagation();
 			});
 			if (goal.archived) {
-				title.createSpan({
+				titleLine.createSpan({
 					cls: 'questline-goals-archived-badge',
 					text: 'Archived',
 				});
 			}
+			this.createEditButton(
+				titleLine,
+				`Edit goal ${goal.name}`,
+				() => {
+					this.editGoalAt(goal.path);
+				},
+			);
 
 			row.createDiv({
 				cls: 'questline-goals-cell questline-goals-cell--category',
@@ -1014,6 +1031,7 @@ export class QuestlineDashboardView extends ItemView {
 			'Tasks',
 		];
 		if (config.useTimekeep) headers.push('Hours');
+		headers.push('Actions');
 
 		const head = table.createEl('thead').createEl('tr');
 		for (const label of headers) head.createEl('th', { text: label });
@@ -1079,6 +1097,17 @@ export class QuestlineDashboardView extends ItemView {
 								),
 				});
 			}
+
+			const actions = row.createEl('td', {
+				cls: 'questline-projects-actions',
+			});
+			this.createEditButton(
+				actions,
+				`Edit project ${project.name}`,
+				() => {
+					this.editProjectAt(project.path);
+				},
+			);
 		}
 	}
 
@@ -1165,7 +1194,13 @@ export class QuestlineDashboardView extends ItemView {
 				text: 'Archived',
 			});
 		}
-		this.createBoardMoveButton(top, ref);
+		const actions = top.createDiv({
+			cls: 'questline-card-actions',
+		});
+		this.createEditButton(actions, `Edit goal ${goal.name}`, () => {
+			this.editGoalAt(goal.path);
+		});
+		this.createBoardMoveButton(actions, ref);
 		header.createSpan({
 			cls: 'questline-goals-board-category',
 			text: goal.category ?? 'No category',
@@ -2007,19 +2042,25 @@ export class QuestlineDashboardView extends ItemView {
 		config: QuestlineConfig,
 		showCategory = false,
 	): void {
-		const card = this.noteLink(
-			containerEl,
-			goal.path,
-			`Open goal ${goal.name}`,
-			'questline-dashboard-card',
-		);
+		const card = containerEl.createDiv({
+			cls: 'questline-dashboard-card',
+		});
+		card.addEventListener('click', (event) => {
+			revealOrOpen(this.plugin.app, goal.path, event);
+		});
 
 		const header = card.createDiv({
 			cls: 'questline-dashboard-card-header',
 		});
-		header.createSpan({
-			cls: 'questline-dashboard-card-title',
-			text: goal.name,
+		const titleLink = this.noteTextLink(
+			header,
+			goal.path,
+			goal.name,
+			`Open goal ${goal.name}`,
+			'questline-dashboard-card-title',
+		);
+		titleLink.addEventListener('click', (event) => {
+			event.stopPropagation();
 		});
 		if (goal.archived) {
 			header.createSpan({
@@ -2027,16 +2068,21 @@ export class QuestlineDashboardView extends ItemView {
 				text: 'Archived',
 			});
 		}
-
+		const actions = header.createDiv({
+			cls: 'questline-card-actions',
+		});
 		const badge = dueBadge(goal);
 		if (badge) {
-			header.createSpan({
+			actions.createSpan({
 				cls:
 					'questline-dashboard-due ' +
 					`questline-dashboard-due--${badge.urgency}`,
 				text: badge.text,
 			});
 		}
+		this.createEditButton(actions, `Edit goal ${goal.name}`, () => {
+			this.editGoalAt(goal.path);
+		});
 
 		renderProgressRow(
 			card,
@@ -2182,12 +2228,22 @@ export class QuestlineDashboardView extends ItemView {
 			event.stopPropagation();
 			revealOrOpen(this.plugin.app, project.path, event);
 		});
-		header.createSpan({
+		const actions = header.createDiv({
+			cls: 'questline-card-actions',
+		});
+		actions.createSpan({
 			cls: 'questline-dashboard-status',
 			text: project.status ?? 'No status',
 		});
+		this.createEditButton(
+			actions,
+			`Edit project ${project.name}`,
+			() => {
+				this.editProjectAt(project.path);
+			},
+		);
 		if (draggable) {
-			this.createBoardMoveButton(header, {
+			this.createBoardMoveButton(actions, {
 				kind: 'project',
 				path: project.path,
 				lane: project.status,
@@ -2261,6 +2317,49 @@ export class QuestlineDashboardView extends ItemView {
 				project.name,
 			);
 		}
+	}
+
+	private editGoalAt(path: string): void {
+		const goal = this.plugin.getIndex().goalByPath.get(path);
+		if (!goal) {
+			new Notice('This goal is no longer in the index.');
+
+			return;
+		}
+
+		openGoalEditor(this.plugin, goal);
+	}
+
+	private editProjectAt(path: string): void {
+		const project = this.plugin.getIndex().projectByPath.get(path);
+		if (!project) {
+			new Notice('This project is no longer in the index.');
+
+			return;
+		}
+
+		openProjectEditor(this.plugin, project);
+	}
+
+	private createEditButton(
+		containerEl: HTMLElement,
+		label: string,
+		onClick: () => void,
+	): void {
+		const button = containerEl.createEl('button', {
+			cls: 'questline-edit-action',
+			attr: {
+				type: 'button',
+				'aria-label': label,
+				title: 'Edit',
+			},
+		});
+		setIcon(button, 'pencil');
+		button.addEventListener('click', (event) => {
+			event.preventDefault();
+			event.stopPropagation();
+			onClick();
+		});
 	}
 
 	private createBoardMoveButton(
