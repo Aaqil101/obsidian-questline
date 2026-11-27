@@ -7,6 +7,8 @@ export interface ListEditorOptions {
 	desc: string;
 	values: readonly string[];
 	placeholder: string;
+	/** When set, the card offers a button that restores this list. */
+	defaults?: readonly string[];
 	onChange: (values: string[]) => void | Promise<void>;
 }
 
@@ -36,6 +38,7 @@ export function renderListEditor(options: ListEditorOptions): void {
 	const addSetting = new Setting(card);
 	addSetting.setClass('questline-list-item');
 	addSetting.setClass('questline-list-add');
+	const rows: HTMLElement[] = [];
 
 	const addRow = (value: string): void => {
 		const row = new Setting(card);
@@ -44,6 +47,7 @@ export function renderListEditor(options: ListEditorOptions): void {
 		if (addSetting.settingEl.parentElement) {
 			addSetting.settingEl.before(row.settingEl);
 		}
+		rows.push(row.settingEl);
 
 		// The row owns its current value, so editing it twice keeps its place
 		// in the list instead of restoring the value it started with.
@@ -66,6 +70,9 @@ export function renderListEditor(options: ListEditorOptions): void {
 				.onClick(async () => {
 					const index = values.indexOf(current);
 					if (index >= 0) values.splice(index, 1);
+
+					const rowIndex = rows.indexOf(row.settingEl);
+					if (rowIndex >= 0) rows.splice(rowIndex, 1);
 
 					row.settingEl.remove();
 					await onChange([...values]);
@@ -103,4 +110,23 @@ export function renderListEditor(options: ListEditorOptions): void {
 	addSetting.addButton((button) =>
 		button.setButtonText('Add').onClick(() => add()),
 	);
+
+	if (options.defaults) {
+		const defaults = [...options.defaults];
+		new Setting(card)
+			.setName('Reset to defaults')
+			.setDesc(
+				`Restore ${options.name.toLowerCase()} to the built-in list. Notes are not changed.`,
+			)
+			.addButton((button) =>
+				button.setButtonText('Reset').onClick(async () => {
+					for (const row of rows) row.remove();
+					rows.length = 0;
+					values.splice(0, values.length, ...defaults);
+					entry?.setValue('');
+					for (const value of values) addRow(value);
+					await onChange([...values]);
+				}),
+			);
+	}
 }

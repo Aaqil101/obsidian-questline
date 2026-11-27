@@ -6,7 +6,12 @@ import {
 } from '../templates/notes';
 import { folderSetting, noteSetting } from './folderPicker';
 import { renderListEditor } from './listEditor';
-import { normalizeFolder, normalizeTemplate } from './types';
+import {
+	DEFAULT_GOAL_CATEGORIES,
+	DEFAULT_PROJECT_STATUSES,
+	normalizeFolder,
+	normalizeTemplate,
+} from './types';
 import {
 	group,
 	noteParagraph,
@@ -222,6 +227,7 @@ function renderFieldsPage(
 		name: 'Goal categories',
 		desc: 'Suggestions for the category picker when creating a goal.',
 		values: settings.goalCategories,
+		defaults: DEFAULT_GOAL_CATEGORIES,
 		placeholder: 'New category',
 		onChange: (values) => plugin.updateSettings({ goalCategories: values }),
 	});
@@ -231,6 +237,7 @@ function renderFieldsPage(
 		name: 'Project statuses',
 		desc: 'Suggestions for the status picker when creating a project.',
 		values: settings.projectStatuses,
+		defaults: DEFAULT_PROJECT_STATUSES,
 		placeholder: 'New status',
 		onChange: (values) => plugin.updateSettings({ projectStatuses: values }),
 	});
