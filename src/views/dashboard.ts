@@ -12,6 +12,7 @@ import type { QuestlineConfig } from '../settings/types';
 import {
 	applyBoardMove,
 	boardColumns,
+	boardMoveOptions,
 	boardMovePatch,
 	renderBoard,
 	type BoardKind,
@@ -69,7 +70,7 @@ const STAT_ICONS: Record<string, string> = {
 
 const CATEGORY_COLORS = 8;
 
-interface BoardDragState {
+interface BoardCardState {
 	kind: BoardKind;
 	path: string;
 	lane: string | null;
@@ -252,9 +253,14 @@ export class QuestlineDashboardView extends ItemView {
 	private projectList: ProjectListState = {
 		...DEFAULT_PROJECT_LIST_STATE,
 	};
-	private boardDrag: BoardDragState | null = null;
+	private boardDrag: BoardCardState | null = null;
 	private boardWritePending = false;
 	private boardDragEndedAt = 0;
+	private boardMenu: {
+		menu: HTMLElement;
+		trigger: HTMLElement;
+		cleanup: () => void;
+	} | null = null;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -275,6 +281,29 @@ export class QuestlineDashboardView extends ItemView {
 		return 'target';
 	}
 
+	/** True when the active tab paints a board. */
+	hasBoard(): boolean {
+		const config = this.plugin.getConfig();
+
+		return (
+			(this.activeTab === 'goals' && config.goalsStyle === 'board') ||
+			(this.activeTab === 'projects' &&
+				config.projectsStyle === 'board')
+		);
+	}
+
+	/** Focus the board's active card, or its first card. */
+	focusBoard(): void {
+		const card =
+			this.contentEl.querySelector<HTMLElement>(
+				'.questline-board-card[tabindex="0"]',
+			) ??
+			this.contentEl.querySelector<HTMLElement>(
+				'.questline-board-card',
+			);
+		card?.focus();
+	}
+
 	async onOpen(): Promise<void> {
 		this.contentEl.addClass('questline-dashboard');
 		this.unsubscribe = this.plugin.onIndexRefresh(() => this.render());
@@ -282,16 +311,21 @@ export class QuestlineDashboardView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
+		this.closeBoardMoveMenu(false);
 		this.unsubscribe?.();
 		this.unsubscribe = null;
 	}
 
 	private render(): void {
 		const { contentEl } = this;
+		this.closeBoardMoveMenu(false);
 		contentEl.empty();
 		this.boardDrag = null;
 
 		const config = this.plugin.getConfig();
+		if (this.hasBoard() && config.skipControlsToBoard) {
+			this.renderBoardFocusTarget(contentEl);
+		}
 		this.renderTabs(contentEl);
 
 		if (this.activeTab === 'goals') {
@@ -330,6 +364,26 @@ export class QuestlineDashboardView extends ItemView {
 			default:
 				this.renderMinimal(contentEl, data, config);
 		}
+	}
+
+	private renderBoardFocusTarget(containerEl: HTMLElement): void {
+		const target = containerEl.createSpan({
+			cls: 'questline-board-skip-target',
+			attr: { tabindex: '0', 'aria-label': 'Board' },
+		});
+		target.addEventListener('focus', () => {
+			if (!this.hasBoard()) return;
+
+			this.focusBoard();
+		});
+		queueMicrotask(() => {
+			if (
+				target.isConnected &&
+				!this.contentEl.querySelector('.questline-board-card')
+			) {
+				target.remove();
+			}
+		});
 	}
 
 	private renderTabs(containerEl: HTMLElement): void {
@@ -1055,6 +1109,7 @@ export class QuestlineDashboardView extends ItemView {
 		});
 
 		this.bindBoardDrop(containerEl, 'goal');
+		this.setupBoardKeyboard(containerEl);
 	}
 
 	private renderGoalBoardCard(
@@ -1062,23 +1117,46 @@ export class QuestlineDashboardView extends ItemView {
 		goal: GoalOverviewItem,
 		config: QuestlineConfig,
 	): void {
-		const card = this.noteLink(
-			containerEl,
-			goal.path,
-			`Open goal ${goal.name}`,
-			`questline-goals-board-card${goal.archived ? ' is-archived' : ''}`,
-			() => this.canOpenBoardCard(),
-		);
+		const ref: BoardCardState = {
+			kind: 'goal',
+			path: goal.path,
+			lane: goal.category,
+			name: goal.name,
+		};
+		const card = containerEl.createDiv({
+			cls: `questline-goals-board-card questline-board-card${goal.archived ? ' is-archived' : ''}`,
+			attr: {
+				tabindex: '-1',
+				role: 'button',
+				'aria-label': `Goal ${goal.name}. Enter opens the note, Space opens Move to.`,
+				'data-board-path': goal.path,
+			},
+		});
+		card.addEventListener('click', (event) => {
+			if (!this.canOpenBoardCard()) return;
+
+			revealOrOpen(this.plugin.app, goal.path, event);
+		});
 
 		const header = card.createDiv({
 			cls: 'questline-goals-board-header',
 		});
-		const title = header.createDiv({
+		const top = header.createDiv({
+			cls: 'questline-goals-board-top',
+		});
+		const title = top.createDiv({
 			cls: 'questline-goals-board-title',
 		});
-		title.createSpan({
-			cls: 'questline-goals-title',
-			text: goal.name,
+		const titleLink = this.noteTextLink(
+			title,
+			goal.path,
+			goal.name,
+			`Open goal ${goal.name}`,
+			'questline-goals-title',
+			() => this.canOpenBoardCard(),
+		);
+		titleLink.addEventListener('click', (event) => {
+			event.stopPropagation();
 		});
 		if (goal.archived) {
 			title.createSpan({
@@ -1086,6 +1164,7 @@ export class QuestlineDashboardView extends ItemView {
 				text: 'Archived',
 			});
 		}
+		this.createBoardMoveButton(top, ref);
 		header.createSpan({
 			cls: 'questline-goals-board-category',
 			text: goal.category ?? 'No category',
@@ -2047,6 +2126,7 @@ export class QuestlineDashboardView extends ItemView {
 		});
 
 		this.bindBoardDrop(containerEl, 'project');
+		this.setupBoardKeyboard(containerEl);
 	}
 
 	private renderProjectCard(
@@ -2061,8 +2141,18 @@ export class QuestlineDashboardView extends ItemView {
 			cls:
 				'questline-dashboard-card questline-dashboard-project-card ' +
 				statusClass(project.status) +
-				(interactive ? '' : ' is-static'),
+				(interactive ? '' : ' is-static') +
+				(draggable ? ' questline-board-card' : ''),
 		});
+		if (draggable) {
+			card.setAttr('tabindex', '-1');
+			card.setAttr('role', 'button');
+			card.setAttr(
+				'aria-label',
+				`Project ${project.name}. Enter opens the note, Space opens Move to.`,
+			);
+			card.setAttr('data-board-path', project.path);
+		}
 		if (interactive) {
 			card.addEventListener('click', (event) => {
 				if (draggable && !this.canOpenBoardCard()) return;
@@ -2094,6 +2184,14 @@ export class QuestlineDashboardView extends ItemView {
 			cls: 'questline-dashboard-status',
 			text: project.status ?? 'No status',
 		});
+		if (draggable) {
+			this.createBoardMoveButton(header, {
+				kind: 'project',
+				path: project.path,
+				lane: project.status,
+				name: project.name,
+			});
+		}
 
 		if (project.subtitle) {
 			card.createDiv({
@@ -2163,6 +2261,368 @@ export class QuestlineDashboardView extends ItemView {
 		}
 	}
 
+	private createBoardMoveButton(
+		containerEl: HTMLElement,
+		ref: BoardCardState,
+	): void {
+		const button = containerEl.createEl('button', {
+			cls: 'questline-board-move',
+			attr: {
+				type: 'button',
+				'aria-label': `Move ${ref.name} to another lane`,
+				'aria-haspopup': 'menu',
+				'aria-expanded': 'false',
+				title: 'Move to…',
+			},
+		});
+		setIcon(button, 'move');
+		button.addEventListener('click', (event) => {
+			event.preventDefault();
+			event.stopPropagation();
+			this.toggleBoardMoveMenu(button, ref);
+		});
+	}
+
+	private toggleBoardMoveMenu(
+		trigger: HTMLElement,
+		ref: BoardCardState,
+	): void {
+		if (this.boardMenu?.trigger === trigger) {
+			this.closeBoardMoveMenu(false);
+
+			return;
+		}
+
+		this.closeBoardMoveMenu(false);
+		const board = trigger.closest('.questline-board');
+		if (!board) return;
+
+		const lanes = Array.from(
+			board.querySelectorAll<HTMLElement>('.questline-board-lane'),
+		).map((lane) => ({
+			value:
+				lane.dataset.laneNone === 'true'
+					? null
+					: lane.dataset.lane || null,
+			label:
+				lane
+					.querySelector<HTMLElement>(
+						'.questline-board-lane-title',
+					)
+					?.textContent?.trim() ?? '',
+		}));
+		const options = boardMoveOptions(lanes, ref.lane);
+
+		const menu = document.body.createDiv({
+			cls: 'questline-board-move-menu',
+			attr: { role: 'menu', tabindex: '-1' },
+		});
+		const items: HTMLButtonElement[] = [];
+
+		for (const option of options) {
+			const item = menu.createEl('button', {
+				cls: 'questline-board-move-item',
+				text: option.label,
+				attr: {
+					type: 'button',
+					role: 'menuitem',
+				},
+			});
+			item.addEventListener('click', () => {
+				this.closeBoardMoveMenu(true);
+				void this.moveBoardItem(ref.kind, ref, option.value);
+			});
+			items.push(item);
+		}
+
+		if (items.length === 0) {
+			menu.createDiv({
+				cls: 'questline-board-move-empty',
+				text: 'No other lanes',
+			});
+		}
+
+		const triggerRect = trigger.getBoundingClientRect();
+		menu.setCssProps({
+			'--questline-menu-left': `${triggerRect.left}px`,
+			'--questline-menu-top': `${triggerRect.bottom + 4}px`,
+		});
+		const menuRect = menu.getBoundingClientRect();
+		const left = Math.max(
+			8,
+			Math.min(triggerRect.left, window.innerWidth - menuRect.width - 8),
+		);
+		let top = triggerRect.bottom + 4;
+		if (top + menuRect.height > window.innerHeight - 8) {
+			top = Math.max(8, triggerRect.top - menuRect.height - 4);
+		}
+		menu.setCssProps({
+			'--questline-menu-left': `${left}px`,
+			'--questline-menu-top': `${top}px`,
+		});
+
+		const onPointerDown = (event: PointerEvent): void => {
+			const target = event.target;
+			if (
+				target instanceof Node &&
+				(menu.contains(target) || trigger.contains(target))
+			) {
+				return;
+			}
+
+			this.closeBoardMoveMenu(false);
+		};
+		const onKeyDown = (event: KeyboardEvent): void => {
+			if (event.key === 'Escape') {
+				event.preventDefault();
+				this.closeBoardMoveMenu(true);
+
+				return;
+			}
+
+			if (
+				!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(
+					event.key,
+				) ||
+				items.length === 0
+			) {
+				return;
+			}
+
+			event.preventDefault();
+			const index = items.indexOf(
+				document.activeElement as HTMLButtonElement,
+			);
+			let next = 0;
+			if (event.key === 'ArrowDown') {
+				next = index < 0 ? 0 : (index + 1) % items.length;
+			} else if (event.key === 'ArrowUp') {
+				next = index <= 0 ? items.length - 1 : index - 1;
+			} else if (event.key === 'End') {
+				next = items.length - 1;
+			}
+
+			items[next]?.focus();
+		};
+		const onFocusOut = (event: FocusEvent): void => {
+			const next = event.relatedTarget;
+			if (
+				next instanceof Node &&
+				(menu.contains(next) || trigger.contains(next))
+			) {
+				return;
+			}
+
+			this.closeBoardMoveMenu(false);
+		};
+		const onDismiss = (): void => {
+			this.closeBoardMoveMenu(false);
+		};
+
+		document.addEventListener('pointerdown', onPointerDown, true);
+		window.addEventListener('scroll', onDismiss, true);
+		window.addEventListener('resize', onDismiss);
+		menu.addEventListener('keydown', onKeyDown);
+		menu.addEventListener('focusout', onFocusOut);
+
+		this.boardMenu = {
+			menu,
+			trigger,
+			cleanup: () => {
+				document.removeEventListener(
+					'pointerdown',
+					onPointerDown,
+					true,
+				);
+				window.removeEventListener('scroll', onDismiss, true);
+				window.removeEventListener('resize', onDismiss);
+				menu.removeEventListener('keydown', onKeyDown);
+				menu.removeEventListener('focusout', onFocusOut);
+			},
+		};
+		trigger.setAttr('aria-expanded', 'true');
+		(items[0] ?? menu).focus();
+	}
+
+	private closeBoardMoveMenu(refocus: boolean): void {
+		const state = this.boardMenu;
+		if (!state) return;
+
+		this.boardMenu = null;
+		state.cleanup();
+		state.menu.remove();
+		state.trigger.setAttr('aria-expanded', 'false');
+		if (refocus) {
+			const card = state.trigger.closest<HTMLElement>(
+				'.questline-board-card',
+			);
+			(card ?? state.trigger).focus();
+		}
+	}
+
+	private setupBoardKeyboard(containerEl: HTMLElement): void {
+		const cards = Array.from(
+			containerEl.querySelectorAll<HTMLElement>(
+				'.questline-board-card',
+			),
+		);
+		if (cards.length === 0) return;
+
+		cards.forEach((card, index) => {
+			card.setAttr('tabindex', index === 0 ? '0' : '-1');
+			card
+				.querySelectorAll<HTMLElement>('a, button')
+				.forEach((element) => element.setAttr('tabindex', '-1'));
+			card.addEventListener('focus', () => {
+				for (const other of cards) {
+					other.setAttr(
+						'tabindex',
+						other === card ? '0' : '-1',
+					);
+				}
+			});
+			card.addEventListener('keydown', (event) => {
+				this.handleBoardCardKey(event, card, containerEl);
+			});
+		});
+	}
+
+	private handleBoardCardKey(
+		event: KeyboardEvent,
+		card: HTMLElement,
+		containerEl: HTMLElement,
+	): void {
+		if (event.target !== card) return;
+
+		if (event.key === 'Tab') {
+			const cards = Array.from(
+				containerEl.querySelectorAll<HTMLElement>(
+					'.questline-board-card',
+				),
+			);
+			if (cards.length > 0) {
+				event.preventDefault();
+				const index = Math.max(0, cards.indexOf(card));
+				const step = event.shiftKey ? -1 : 1;
+				const next = (index + step + cards.length) % cards.length;
+				cards[next]?.focus();
+			}
+
+			return;
+		}
+
+		if (event.key === 'Escape') {
+			event.preventDefault();
+			this.leaveBoardFocus();
+
+			return;
+		}
+
+		if (event.key === 'Enter') {
+			event.preventDefault();
+			if (!this.canOpenBoardCard()) return;
+
+			const path = card.dataset.boardPath;
+			if (path) revealOrOpen(this.plugin.app, path, event);
+
+			return;
+		}
+
+		if (event.key === ' ' || event.key === 'Spacebar') {
+			event.preventDefault();
+			card.querySelector<HTMLElement>('.questline-board-move')?.click();
+
+			return;
+		}
+
+		if (
+			!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(
+				event.key,
+			)
+		) {
+			return;
+		}
+
+		event.preventDefault();
+		this.moveBoardFocus(card, containerEl, event.key);
+	}
+
+	private leaveBoardFocus(): void {
+		const board = this.contentEl.querySelector<HTMLElement>(
+			'.questline-board',
+		);
+		if (!board) return;
+
+		const focusables = Array.from(
+			this.contentEl.querySelectorAll<HTMLElement>(
+				'button, input, select, textarea, [tabindex="0"], a[href]',
+			),
+		).filter(
+			(element) =>
+				!board.contains(element) &&
+				!element.hasAttribute('disabled') &&
+				element.tabIndex >= 0,
+		);
+		const last = focusables[focusables.length - 1];
+		last?.focus();
+	}
+
+	private moveBoardFocus(		card: HTMLElement,
+		containerEl: HTMLElement,
+		key: string,
+	): void {
+		const lane = card.closest<HTMLElement>('.questline-board-lane');
+		if (!lane) return;
+
+		const lanes = Array.from(
+			containerEl.querySelectorAll<HTMLElement>(
+				'.questline-board-lane',
+			),
+		);
+		const cardsIn = (element: HTMLElement): HTMLElement[] =>
+			Array.from(
+				element.querySelectorAll<HTMLElement>(
+					'.questline-board-card',
+				),
+			);
+		const laneIndex = lanes.indexOf(lane);
+
+		if (key === 'ArrowLeft' || key === 'ArrowRight') {
+			const index = cardsIn(lane).indexOf(card);
+			const step = key === 'ArrowRight' ? 1 : -1;
+
+			for (let i = laneIndex + step; i >= 0 && i < lanes.length; i += step) {
+				const adjacent = lanes[i];
+				if (!adjacent) continue;
+
+				const candidates = cardsIn(adjacent);
+				if (candidates.length === 0) continue;
+
+				const target =
+					candidates[
+						Math.min(Math.max(index, 0), candidates.length - 1)
+					];
+				target?.focus();
+
+				return;
+			}
+
+			return;
+		}
+
+		const cards = cardsIn(lane);
+		const index = cards.indexOf(card);
+		if (key === 'ArrowUp') {
+			cards[Math.max(0, index - 1)]?.focus();
+		} else if (key === 'ArrowDown') {
+			cards[Math.min(cards.length - 1, index + 1)]?.focus();
+		} else if (key === 'Home') {
+			cards[0]?.focus();
+		} else if (key === 'End') {
+			cards[cards.length - 1]?.focus();
+		}
+	}
+
 	private enableBoardDrag(
 		card: HTMLElement,
 		kind: BoardKind,
@@ -2227,7 +2687,7 @@ export class QuestlineDashboardView extends ItemView {
 							? null
 							: lane.dataset.lane || null;
 					this.boardDrag = null;
-					void this.moveBoardCard(kind, drag, target);
+					void this.moveBoardItem(kind, drag, target);
 				});
 			});
 	}
@@ -2240,9 +2700,9 @@ export class QuestlineDashboardView extends ItemView {
 			.forEach((lane) => lane.removeClass('is-drop-target'));
 	}
 
-	private async moveBoardCard(
+	private async moveBoardItem(
 		kind: BoardKind,
-		drag: BoardDragState,
+		drag: BoardCardState,
 		target: string | null,
 	): Promise<void> {
 		if (this.boardWritePending) return;
@@ -2374,6 +2834,21 @@ export function registerDashboardView(plugin: QuestlinePlugin): void {
 		name: 'Open dashboard',
 		callback: () => {
 			void openDashboard(plugin);
+		},
+	});
+	plugin.addCommand({
+		id: 'focus-board',
+		name: 'Focus board',
+		checkCallback: (checking) => {
+			const view =
+				plugin.app.workspace.getActiveViewOfType(
+					QuestlineDashboardView,
+				);
+			if (!view?.hasBoard()) return false;
+
+			if (!checking) view.focusBoard();
+
+			return true;
 		},
 	});
 }

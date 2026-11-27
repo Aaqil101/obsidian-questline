@@ -61,6 +61,8 @@ export interface QuestlineSettings {
 	dashboardStyle: DashboardStyle;
 	goalsStyle: GoalsStyle;
 	projectsStyle: ProjectsStyle;
+	/** When enabled, Tab from the top of a board view focuses the board. */
+	skipControlsToBoard: boolean;
 }
 
 export const DEFAULT_GOAL_CATEGORIES = [
@@ -112,6 +114,7 @@ export const DEFAULT_SETTINGS: QuestlineSettings = {
 	dashboardStyle: 'minimal',
 	goalsStyle: 'list',
 	projectsStyle: 'table',
+	skipControlsToBoard: false,
 };
 
 /**
@@ -141,6 +144,8 @@ export interface QuestlineConfig {
 	dashboardStyle: DashboardStyle;
 	goalsStyle: GoalsStyle;
 	projectsStyle: ProjectsStyle;
+	/** When enabled, Tab from the top of a board view focuses the board. */
+	skipControlsToBoard: boolean;
 }
 
 export type FolderKind = 'folder' | 'file' | 'missing';
@@ -349,6 +354,10 @@ export function resolveConfig(
 		dashboardStyle: cleanDashboardStyle(stored.dashboardStyle),
 		goalsStyle: cleanGoalsStyle(stored.goalsStyle),
 		projectsStyle: cleanProjectsStyle(stored.projectsStyle),
+		skipControlsToBoard: cleanBoolean(
+			stored.skipControlsToBoard,
+			DEFAULT_SETTINGS.skipControlsToBoard,
+		),
 	};
 }
 
@@ -371,6 +380,7 @@ export function appearanceChanged(
 		next.dashboardStyle !== previous.dashboardStyle ||
 		next.goalsStyle !== previous.goalsStyle ||
 		next.projectsStyle !== previous.projectsStyle ||
+		next.skipControlsToBoard !== previous.skipControlsToBoard ||
 		!sameStrings(next.goalCategories, previous.goalCategories)
 	);
 }

@@ -53,6 +53,7 @@ describe('resolveConfig', () => {
 		expect(config.dashboardStyle).toBe('minimal');
 		expect(config.goalsStyle).toBe('list');
 		expect(config.projectsStyle).toBe('table');
+		expect(config.skipControlsToBoard).toBe(false);
 	});
 
 	it('normalizes custom tags and falls back when they are blank', () => {
@@ -141,10 +142,12 @@ describe('resolveConfig', () => {
 		const config = resolveConfig({
 			useTimekeep: false,
 			openAfterCreate: 'yes' as unknown as boolean,
+			skipControlsToBoard: true,
 		});
 
 		expect(config.useTimekeep).toBe(false);
 		expect(config.openAfterCreate).toBe(true);
+		expect(config.skipControlsToBoard).toBe(true);
 	});
 
 	it('accepts the known progress bar styles and falls back otherwise', () => {
@@ -265,6 +268,7 @@ describe('resolveConfig', () => {
 			resolveConfig({ goalsStyle: 'board' }),
 			resolveConfig({ projectsStyle: 'cards' }),
 			resolveConfig({ projectsStyle: 'board' }),
+			resolveConfig({ skipControlsToBoard: true }),
 			resolveConfig({ goalCategories: ['Health'] }),
 		];
 

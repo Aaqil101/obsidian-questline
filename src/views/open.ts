@@ -21,7 +21,7 @@ function findMarkdownLeaf(app: App, path: string): WorkspaceLeaf | null {
 export function revealOrOpen(
 	app: App,
 	path: string,
-	event: MouseEvent,
+	event: Event,
 	sourcePath = '',
 ): void {
 	event.preventDefault();

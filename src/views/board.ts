@@ -27,6 +27,19 @@ export interface BoardMovePatch {
 	remove: string[];
 }
 
+export interface BoardLaneOption {
+	value: string | null;
+	label: string;
+}
+
+/** Lanes offered by a card's Move to… menu: every lane except its own. */
+export function boardMoveOptions(
+	lanes: readonly BoardLaneOption[],
+	current: string | null,
+): BoardLaneOption[] {
+	return lanes.filter((lane) => !sameLane(lane.value, current));
+}
+
 function sameLane(left: string | null, right: string | null): boolean {
 	return (left?.trim().toLowerCase() ?? '') ===
 		(right?.trim().toLowerCase() ?? '');

@@ -11,6 +11,7 @@ import {
 import type QuestlinePlugin from '../main';
 import { appearanceGroup } from './appearance';
 import { creationGroup } from './creation';
+import { keyboardGroup } from './keyboard';
 import { notesGroup } from './notes';
 import { timeGroup } from './time';
 import type { SettingsHost } from './ui';
@@ -34,6 +35,7 @@ export class QuestlineSettingTab
 			creationGroup(this),
 			timeGroup(this),
 			appearanceGroup(this),
+			keyboardGroup(this),
 		];
 	}
 

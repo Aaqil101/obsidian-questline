@@ -422,6 +422,7 @@
  */
 
 .questline-dashboard {
+	position: relative;
 	max-width: 1440px;
 	margin-inline: auto;
 	padding-bottom: 32px;
@@ -1978,9 +1979,8 @@
 	text-decoration: none;
 }
 
-.questline-goals-board-card.internal-link:hover {
+.questline-goals-board-card:hover {
 	background-color: var(--background-secondary-alt);
-	text-decoration: none;
 }
 
 .questline-goals-board-card.is-archived {
@@ -1991,6 +1991,13 @@
 	display: flex;
 	flex-direction: column;
 	gap: 3px;
+}
+
+.questline-goals-board-top {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 8px;
 }
 
 .questline-goals-board-title {
@@ -2058,4 +2065,92 @@
 	border-color: var(--interactive-accent);
 	background-color: var(--background-secondary-alt);
 	box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+/* Board move menu */
+
+.questline-board-move {
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-s);
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.questline-board-move:hover,
+.questline-board-move:focus-visible {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.questline-board-move svg {
+	width: 15px;
+	height: 15px;
+}
+
+.questline-board-move-menu {
+	position: fixed;
+	z-index: var(--layer-popover, 100);
+	top: var(--questline-menu-top, 8px);
+	left: var(--questline-menu-left, 8px);
+	min-width: 160px;
+	max-height: 60vh;
+	padding: 4px;
+	overflow-y: auto;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background-color: var(--background-primary);
+	box-shadow: var(--shadow-s);
+}
+
+.questline-board-move-item {
+	display: block;
+	width: 100%;
+	padding: 6px 10px;
+	border: none;
+	border-radius: var(--radius-s);
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	text-align: left;
+	cursor: pointer;
+}
+
+.questline-board-move-item:hover,
+.questline-board-move-item:focus-visible {
+	background-color: var(--background-modifier-hover);
+}
+
+.questline-board-move-empty {
+	padding: 6px 10px;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+}
+
+.questline-board-card:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 2px;
+}
+
+/* Board focus target */
+
+.questline-board-skip-target {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	border: 0;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
 }

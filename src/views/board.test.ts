@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	applyBoardMove,
 	boardColumns,
+	boardMoveOptions,
 	boardMovePatch,
 	type BoardColumn,
 } from './board';
@@ -155,6 +156,45 @@ describe('boardMovePatch', () => {
 			set: { status: 'Blocked' },
 			remove: [],
 		});
+	});
+});
+
+describe('boardMoveOptions', () => {
+	const lanes = [
+		{ value: 'Todo', label: 'Todo' },
+		{ value: 'In Progress', label: 'In Progress' },
+		{ value: 'Blocked', label: 'Blocked' },
+		{ value: null, label: 'No status' },
+	];
+
+	it('returns every lane except the current one', () => {
+		expect(boardMoveOptions(lanes, 'Todo')).toEqual([
+			{ value: 'In Progress', label: 'In Progress' },
+			{ value: 'Blocked', label: 'Blocked' },
+			{ value: null, label: 'No status' },
+		]);
+	});
+
+	it('matches the current lane case and space insensitively', () => {
+		expect(boardMoveOptions(lanes, ' todo ')).toEqual([
+			{ value: 'In Progress', label: 'In Progress' },
+			{ value: 'Blocked', label: 'Blocked' },
+			{ value: null, label: 'No status' },
+		]);
+	});
+
+	it('excludes the no-value lane when it is current', () => {
+		expect(boardMoveOptions(lanes, null)).toEqual([
+			{ value: 'Todo', label: 'Todo' },
+			{ value: 'In Progress', label: 'In Progress' },
+			{ value: 'Blocked', label: 'Blocked' },
+		]);
+	});
+
+	it('returns an empty list when no other lane exists', () => {
+		expect(boardMoveOptions([{ value: null, label: 'No status' }], null)).toEqual(
+			[],
+		);
 	});
 });
 
