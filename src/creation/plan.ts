@@ -397,9 +397,15 @@ export function planProject(
 	if (goalLinks.length > 1) core.goal = goalLinks;
 
 	const folder = normalizeFolder(draft.folder);
+	// The filename pattern uses one goal so names stay short and stable;
+	// template tokens still see every goal.
+	const filenameValues: TemplateValues = {
+		...values,
+		goalName: goalNames[0] ?? null,
+	};
 	const requestedName = noteName(
 		config.projectFilename,
-		values,
+		filenameValues,
 		now,
 		'Untitled project',
 	);

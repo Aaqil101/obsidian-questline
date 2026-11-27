@@ -417,7 +417,7 @@ describe('planProject', () => {
 			'Goals: [[goals/A|A]], [[goals/B|B]]',
 		);
 		expect(plan.note.body).toContain('Names: A, B');
-		expect(plan.path).toBe('projects/A, B - Bridge.md');
+		expect(plan.path).toBe('projects/A - Bridge.md');
 	});
 
 	it('keeps a standalone project unassigned and defaults the status', () => {
