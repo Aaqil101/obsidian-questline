@@ -1,6 +1,7 @@
 /** The workspace dashboard: minimal tables, cards, and a due-date timeline. */
 import {
 	ItemView,
+	Menu,
 	Notice,
 	TFile,
 	setIcon,
@@ -9,7 +10,10 @@ import {
 import { openGoalModal, openProjectModal } from '../creation/commands';
 import { openGoalEditor, openProjectEditor } from '../creation/editCommands';
 import type QuestlinePlugin from '../main';
-import type { QuestlineConfig } from '../settings/types';
+import {
+	DEFAULT_DASHBOARD_STATUSES,
+	type QuestlineConfig,
+} from '../settings/types';
 import {
 	applyBoardMove,
 	boardColumns,
@@ -32,11 +36,12 @@ import { revealOrOpen } from './open';
 import {
 	activeGoals,
 	dashboardData,
+	dashboardStatusOptions,
 	dueUrgency,
 	goalOverviewItems,
 	groupGoalsByCategory,
-	inProgressProjects,
 	projectOverviewItems,
+	projectsWithStatuses,
 	timelineBuckets,
 	type AttentionItem,
 	type DashboardData,
@@ -57,6 +62,14 @@ import {
 } from './projects';
 import { countLabel, renderEmpty, renderProgressRow } from './render';
 import { renderAuthors } from './authors';
+import {
+	renderProjectActions,
+	type ProjectActionContext,
+} from './projectActions';
+import {
+	renderGoalActions,
+	type GoalActionContext,
+} from './goalActions';
 
 export const DASHBOARD_VIEW_TYPE = 'questline-dashboard';
 
@@ -188,15 +201,21 @@ function dueDateParts(goal: GoalOverviewItem): {
 	};
 }
 
-function timelineSummary(data: DashboardData): string {
+function timelineSummary(
+	data: DashboardData,
+	config: QuestlineConfig,
+): string {
 	const active = activeGoals(data.goals).length;
-	const inProgress = inProgressProjects(data.projects).length;
+	const projects = projectsWithStatuses(
+		data.projects,
+		config.dashboardStatuses,
+	).length;
 	const tracked = data.stats.find(
 		(stat) => stat.label === 'Tracked time',
 	)?.value;
 	const parts = [
 		countLabel(active, 'active goal', 'active goals'),
-		countLabel(inProgress, 'project in progress', 'projects in progress'),
+		countLabel(projects, 'active project', 'active projects'),
 	];
 	if (tracked) parts.push(`${tracked} tracked`);
 
@@ -699,12 +718,10 @@ export class QuestlineDashboardView extends ItemView {
 					text: 'Archived',
 				});
 			}
-			this.createEditButton(
+			renderGoalActions(
 				titleLine,
-				`Edit goal ${goal.name}`,
-				() => {
-					this.editGoalAt(goal.path);
-				},
+				goal,
+				this.goalActionContext(config),
 			);
 
 			row.createDiv({
@@ -735,13 +752,13 @@ export class QuestlineDashboardView extends ItemView {
 				text: String(goal.projectCount),
 			});
 
-			row.createDiv({
+			const due = row.createDiv({
 				cls:
 					'questline-goals-cell questline-goals-cell--due' +
 					(goal.due?.overdue ? ' is-overdue' : ''),
 				attr: { 'data-label': 'Due' },
-				text: describeDue(goal.due),
 			});
+			due.createSpan({ text: describeDue(goal.due) });
 		}
 	}
 
@@ -1203,9 +1220,11 @@ export class QuestlineDashboardView extends ItemView {
 		const actions = top.createDiv({
 			cls: 'questline-card-actions',
 		});
-		this.createEditButton(actions, `Edit goal ${goal.name}`, () => {
-			this.editGoalAt(goal.path);
-		});
+		renderGoalActions(
+			actions,
+			goal,
+			this.goalActionContext(config),
+		);
 		this.createBoardMoveButton(actions, ref);
 		header.createSpan({
 			cls: 'questline-goals-board-category',
@@ -1263,12 +1282,153 @@ export class QuestlineDashboardView extends ItemView {
 		);
 	}
 
+	private projectActionContext(
+		config: QuestlineConfig,
+	): ProjectActionContext {
+		return {
+			plugin: this.plugin,
+			statuses: config.projectStatuses,
+			onEdit: (path) => {
+				this.editProjectAt(path);
+			},
+		};
+	}
+
+	private goalActionContext(config: QuestlineConfig): GoalActionContext {
+		return {
+			plugin: this.plugin,
+			categories: config.goalCategories,
+			onEdit: (path) => {
+				this.editGoalAt(path);
+			},
+		};
+	}
+
+	private renderDashboardControls(
+		containerEl: HTMLElement,
+		data: DashboardData,
+		config: QuestlineConfig,
+	): void {
+		const controls = containerEl.createDiv({
+			cls: 'questline-dashboard-controls',
+		});
+
+		const layouts = controls.createDiv({
+			cls: 'questline-dashboard-layouts',
+			attr: { role: 'group', 'aria-label': 'Dashboard layout' },
+		});
+		const options: readonly {
+			id: 'minimal' | 'cards' | 'timeline';
+			label: string;
+		}[] = [
+			{ id: 'minimal', label: 'Minimal' },
+			{ id: 'cards', label: 'Cards' },
+			{ id: 'timeline', label: 'Timeline' },
+		];
+		for (const option of options) {
+			const active = config.dashboardStyle === option.id;
+			const button = layouts.createEl('button', {
+				cls: `questline-dashboard-layout${active ? ' is-active' : ''}`,
+				text: option.label,
+				attr: {
+					type: 'button',
+					'aria-pressed': active ? 'true' : 'false',
+				},
+			});
+			button.addEventListener('click', () => {
+				if (config.dashboardStyle === option.id) return;
+				void this.plugin.updateSettings({ dashboardStyle: option.id });
+			});
+		}
+
+		const statuses = dashboardStatusOptions(
+			data.projects,
+			config.projectStatuses,
+		);
+		const chips = controls.createDiv({
+			cls: 'questline-dashboard-status-chips',
+			attr: { role: 'group', 'aria-label': 'Visible project statuses' },
+		});
+		for (const status of statuses) {
+			const active = config.dashboardStatuses.some(
+				(value) => value.toLowerCase() === status.toLowerCase(),
+			);
+			const chip = chips.createEl('button', {
+				cls: `questline-dashboard-status-chip${active ? ' is-active' : ''}`,
+				text: status,
+				attr: {
+					type: 'button',
+					'aria-pressed': active ? 'true' : 'false',
+				},
+			});
+			chip.addEventListener('click', () => {
+				const next = active
+					? config.dashboardStatuses.filter(
+							(value) =>
+								value.toLowerCase() !== status.toLowerCase(),
+						)
+					: [...config.dashboardStatuses, status];
+				void this.plugin.updateSettings({ dashboardStatuses: next });
+			});
+		}
+
+		const more = controls.createEl('button', {
+			cls: 'questline-dashboard-more',
+			attr: {
+				type: 'button',
+				'aria-label': 'Dashboard options',
+				'aria-haspopup': 'menu',
+				title: 'Dashboard options',
+			},
+		});
+		setIcon(more, 'more-horizontal');
+		more.addEventListener('click', (event) => {
+			this.openDashboardMenu(event, data, config);
+		});
+	}
+
+	private openDashboardMenu(
+		event: MouseEvent,
+		data: DashboardData,
+		config: QuestlineConfig,
+	): void {
+		const menu = new Menu();
+		menu.addItem((item) =>
+			item.setTitle('Show active statuses').onClick(() => {
+				void this.plugin.updateSettings({
+					dashboardStatuses: [...DEFAULT_DASHBOARD_STATUSES],
+				});
+			}),
+		);
+		menu.addItem((item) =>
+			item.setTitle('Show all statuses').onClick(() => {
+				void this.plugin.updateSettings({
+					dashboardStatuses: dashboardStatusOptions(
+						data.projects,
+						config.projectStatuses,
+					),
+				});
+			}),
+		);
+		menu.addSeparator();
+		menu.addItem((item) =>
+			item.setTitle('Reset dashboard view').onClick(() => {
+				void this.plugin.updateSettings({
+					dashboardStyle: 'minimal',
+					dashboardStatuses: [...DEFAULT_DASHBOARD_STATUSES],
+				});
+			}),
+		);
+		menu.showAtMouseEvent(event);
+	}
+
 	private renderMinimal(
 		containerEl: HTMLElement,
 		data: DashboardData,
 		config: QuestlineConfig,
 	): void {
 		this.renderHeaderBar(containerEl);
+		this.renderDashboardControls(containerEl, data, config);
 
 		if (data.goals.length === 0 && data.projects.length === 0) {
 			renderEmpty(
@@ -1289,7 +1449,7 @@ export class QuestlineDashboardView extends ItemView {
 		);
 		this.renderProjectTable(
 			containerEl,
-			inProgressProjects(data.projects),
+			projectsWithStatuses(data.projects, config.dashboardStatuses),
 			config,
 		);
 	}
@@ -1300,6 +1460,7 @@ export class QuestlineDashboardView extends ItemView {
 		config: QuestlineConfig,
 	): void {
 		this.renderHeader(containerEl, data);
+		this.renderDashboardControls(containerEl, data, config);
 
 		if (data.goals.length === 0 && data.projects.length === 0) {
 			renderEmpty(
@@ -1315,7 +1476,7 @@ export class QuestlineDashboardView extends ItemView {
 		this.renderGoals(containerEl, data.goals, config);
 		this.renderProjects(
 			containerEl,
-			inProgressProjects(data.projects),
+			projectsWithStatuses(data.projects, config.dashboardStatuses),
 			config,
 		);
 	}
@@ -1325,7 +1486,8 @@ export class QuestlineDashboardView extends ItemView {
 		data: DashboardData,
 		config: QuestlineConfig,
 	): void {
-		this.renderTimelineHeader(containerEl, data);
+		this.renderTimelineHeader(containerEl, data, config);
+		this.renderDashboardControls(containerEl, data, config);
 
 		if (data.goals.length === 0 && data.projects.length === 0) {
 			renderEmpty(
@@ -1400,7 +1562,7 @@ export class QuestlineDashboardView extends ItemView {
 
 		this.renderTimelineProjects(
 			containerEl,
-			inProgressProjects(data.projects),
+			projectsWithStatuses(data.projects, config.dashboardStatuses),
 			config,
 		);
 	}
@@ -1408,6 +1570,7 @@ export class QuestlineDashboardView extends ItemView {
 	private renderTimelineHeader(
 		containerEl: HTMLElement,
 		data: DashboardData,
+		config: QuestlineConfig,
 	): void {
 		const header = containerEl.createDiv({
 			cls: 'questline-dashboard-timeline-header',
@@ -1421,7 +1584,7 @@ export class QuestlineDashboardView extends ItemView {
 		});
 		text.createEl('p', {
 			cls: 'questline-dashboard-timeline-summary',
-			text: timelineSummary(data),
+			text: timelineSummary(data, config),
 		});
 
 		const actions = header.createDiv({
@@ -1485,8 +1648,11 @@ export class QuestlineDashboardView extends ItemView {
 		goal: GoalOverviewItem,
 		config: QuestlineConfig,
 	): void {
+		const wrap = containerEl.createDiv({
+			cls: 'questline-dashboard-timeline-card-wrap',
+		});
 		const card = this.noteLink(
-			containerEl,
+			wrap,
 			goal.path,
 			`Open goal ${goal.name}`,
 			'questline-dashboard-timeline-card',
@@ -1539,6 +1705,11 @@ export class QuestlineDashboardView extends ItemView {
 				text: `${formatTrackedHours(goal.hours, config.trackedTimeFormat)} tracked`,
 			});
 		}
+
+		const actions = wrap.createDiv({
+			cls: 'questline-dashboard-timeline-card-actions',
+		});
+		renderGoalActions(actions, goal, this.goalActionContext(config));
 	}
 
 	private renderTimelineProjects(
@@ -1551,11 +1722,11 @@ export class QuestlineDashboardView extends ItemView {
 		});
 		section.createEl('h3', {
 			cls: 'questline-dashboard-timeline-projects-title',
-			text: `Projects in progress (${projects.length})`,
+			text: `Active projects (${projects.length})`,
 		});
 
 		if (projects.length === 0) {
-			renderEmpty(section, 'No projects in progress.');
+			renderEmpty(section, 'No active projects.');
 
 			return;
 		}
@@ -1564,8 +1735,11 @@ export class QuestlineDashboardView extends ItemView {
 			cls: 'questline-dashboard-timeline-project-strip',
 		});
 		for (const project of projects) {
+			const wrap = strip.createDiv({
+				cls: 'questline-dashboard-project-chip-wrap',
+			});
 			const chip = this.noteLink(
-				strip,
+				wrap,
 				project.path,
 				`Open project ${project.name}`,
 				'questline-dashboard-project-chip ' +
@@ -1599,6 +1773,12 @@ export class QuestlineDashboardView extends ItemView {
 				cls: 'questline-dashboard-project-chip-meta',
 				text: meta.join(' · '),
 			});
+			renderProjectActions(
+				wrap,
+				project,
+				this.projectActionContext(config),
+				true,
+			);
 		}
 	}
 	private renderHeaderBar(containerEl: HTMLElement): void {
@@ -1793,6 +1973,7 @@ export class QuestlineDashboardView extends ItemView {
 			'Tasks',
 			'Projects',
 			'Due',
+			'Actions',
 		];
 		const head = table.createEl('thead').createEl('tr');
 		for (const label of headers) head.createEl('th', { text: label });
@@ -1845,6 +2026,15 @@ export class QuestlineDashboardView extends ItemView {
 					text: '—',
 				});
 			}
+
+			const actions = row.createEl('td', {
+				cls: 'questline-dashboard-table-actions',
+			});
+			renderGoalActions(
+				actions,
+				goal,
+				this.goalActionContext(config),
+			);
 		}
 	}
 
@@ -1855,12 +2045,12 @@ export class QuestlineDashboardView extends ItemView {
 	): void {
 		const section = this.renderCompactSection(
 			containerEl,
-			'Projects in progress',
+			'Active projects',
 			projects.length,
 		);
 
 		if (projects.length === 0) {
-			renderEmpty(section, 'No projects in progress.');
+			renderEmpty(section, 'No active projects.');
 
 			return;
 		}
@@ -1873,6 +2063,7 @@ export class QuestlineDashboardView extends ItemView {
 		});
 		const headers = ['Project', 'Goals', 'Status', 'Progress', 'Tasks'];
 		if (config.useTimekeep) headers.push('Hours');
+		headers.push('Actions');
 
 		const head = table.createEl('thead').createEl('tr');
 		for (const label of headers) head.createEl('th', { text: label });
@@ -1924,6 +2115,15 @@ export class QuestlineDashboardView extends ItemView {
 							: '—',
 				});
 			}
+
+			const actions = row.createEl('td', {
+				cls: 'questline-dashboard-table-actions',
+			});
+			renderProjectActions(
+				actions,
+				project,
+				this.projectActionContext(config),
+			);
 		}
 	}
 
@@ -2086,9 +2286,7 @@ export class QuestlineDashboardView extends ItemView {
 				text: badge.text,
 			});
 		}
-		this.createEditButton(actions, `Edit goal ${goal.name}`, () => {
-			this.editGoalAt(goal.path);
-		});
+		renderGoalActions(actions, goal, this.goalActionContext(config));
 
 		renderProgressRow(
 			card,
@@ -2127,12 +2325,12 @@ export class QuestlineDashboardView extends ItemView {
 	): void {
 		const section = this.renderSection(
 			containerEl,
-			'Projects in progress',
+			'Active projects',
 			projects.length,
 		);
 
 		if (projects.length === 0) {
-			renderEmpty(section, 'No projects in progress.');
+			renderEmpty(section, 'No active projects.');
 
 			return;
 		}
@@ -2234,19 +2432,20 @@ export class QuestlineDashboardView extends ItemView {
 			event.stopPropagation();
 			revealOrOpen(this.plugin.app, project.path, event);
 		});
-		const actions = header.createDiv({
-			cls: 'questline-card-actions',
-		});
-		actions.createSpan({
+		header.createSpan({
 			cls: 'questline-dashboard-status',
 			text: project.status ?? 'No status',
 		});
-		this.createEditButton(
+		const actions = header.createDiv({
+			cls: 'questline-card-actions',
+		});
+		renderProjectActions(
 			actions,
-			`Edit project ${project.name}`,
-			() => {
-				this.editProjectAt(project.path);
-			},
+			project,
+			this.projectActionContext(config),
+			false,
+			false,
+			true,
 		);
 		if (draggable) {
 			this.createBoardMoveButton(actions, {

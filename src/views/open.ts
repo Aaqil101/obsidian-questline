@@ -35,3 +35,19 @@ export function revealOrOpen(
 
 	void app.workspace.openLinkText(path, sourcePath, 'tab');
 }
+
+/** Reveal an open note, or open it without an event (menus and actions). */
+export function openOrReveal(
+	app: App,
+	path: string,
+	newLeaf = false,
+): void {
+	const leaf = findMarkdownLeaf(app, path);
+	if (leaf) {
+		void app.workspace.revealLeaf(leaf);
+
+		return;
+	}
+
+	void app.workspace.openLinkText(path, '', newLeaf ? 'tab' : false);
+}

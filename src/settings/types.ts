@@ -53,6 +53,8 @@ export interface QuestlineSettings {
 	projectTag: string;
 	goalCategories: string[];
 	projectStatuses: string[];
+	/** Project statuses shown in the dashboard project sections. */
+	dashboardStatuses: string[];
 	/** Known authors offered by the author picker. */
 	authors: string[];
 	defaultAuthor: string;
@@ -88,6 +90,7 @@ export const DEFAULT_GOAL_CATEGORIES = [
 export const DEFAULT_PROJECT_STATUSES = [
 	'Todo',
 	'Waiting',
+	'On Hold',
 	'In Progress',
 	'Completed',
 	'Discarded',
@@ -104,6 +107,13 @@ export const DEFAULT_PROJECT_FOLDER = 'projects';
 export const DEFAULT_AUTHOR_FOLDER = 'authors';
 export const DEFAULT_TEMPLATE_FOLDER = 'templates';
 
+/** Statuses the dashboard shows before the user changes them. */
+export const DEFAULT_DASHBOARD_STATUSES = [
+	'In Progress',
+	'On Hold',
+	'Waiting',
+];
+
 export const DEFAULT_SETTINGS: QuestlineSettings = {
 	goalFolder: DEFAULT_GOAL_FOLDER,
 	projectFolder: DEFAULT_PROJECT_FOLDER,
@@ -116,6 +126,7 @@ export const DEFAULT_SETTINGS: QuestlineSettings = {
 	projectTag: 'project',
 	goalCategories: [...DEFAULT_GOAL_CATEGORIES],
 	projectStatuses: [...DEFAULT_PROJECT_STATUSES],
+	dashboardStatuses: [...DEFAULT_DASHBOARD_STATUSES],
 	authors: [],
 	defaultAuthor: '',
 	authorWikilink: false,
@@ -152,6 +163,7 @@ export interface QuestlineConfig {
 	projectTag: string;
 	goalCategories: readonly string[];
 	projectStatuses: readonly string[];
+	dashboardStatuses: readonly string[];
 	authors: readonly string[];
 	defaultAuthor: string;
 	authorWikilink: boolean;
@@ -372,6 +384,10 @@ export function resolveConfig(
 			stored.projectStatuses,
 			DEFAULT_PROJECT_STATUSES,
 		),
+		dashboardStatuses: cleanList(
+			stored.dashboardStatuses,
+			DEFAULT_DASHBOARD_STATUSES,
+		),
 		authors: cleanList(stored.authors, DEFAULT_SETTINGS.authors),
 		defaultAuthor: cleanText(stored.defaultAuthor, ''),
 		authorWikilink: cleanBoolean(
@@ -424,6 +440,7 @@ export function appearanceChanged(
 		next.goalsStyle !== previous.goalsStyle ||
 		next.projectsStyle !== previous.projectsStyle ||
 		next.boardDirection !== previous.boardDirection ||
+		!sameStrings(next.dashboardStatuses, previous.dashboardStatuses) ||
 		next.skipControlsToBoard !== previous.skipControlsToBoard ||
 		!sameStrings(next.goalCategories, previous.goalCategories)
 	);

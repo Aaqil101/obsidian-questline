@@ -13,12 +13,14 @@ import {
 	activeGoals,
 	attentionItems,
 	categoryRank,
+	dashboardStatusOptions,
 	dueUrgency,
 	goalOverviewItems,
 	groupGoalsByCategory,
 	inProgressProjects,
 	overviewStats,
 	projectOverviewItems,
+	projectsWithStatuses,
 	timelineBuckets,
 	type GoalOverviewItem,
 	type ProjectOverviewItem,
@@ -413,20 +415,21 @@ describe('projectOverviewItems', () => {
 });
 
 describe('inProgressProjects', () => {
+	const item = (
+		name: string,
+		status: string | null,
+	): ProjectOverviewItem => ({
+		path: `projects/${name}.md`,
+		name,
+		subtitle: null,
+		authors: [],
+		status,
+		counts: { completed: 0, total: 0, percent: 0 },
+		goals: [],
+		hours: null,
+	});
+
 	it('matches the status case-insensitively and keeps order', () => {
-		const item = (
-			name: string,
-			status: string | null,
-		): ProjectOverviewItem => ({
-			path: `projects/${name}.md`,
-			name,
-			subtitle: null,
-			authors: [],
-			status,
-			counts: { completed: 0, total: 0, percent: 0 },
-			goals: [],
-			hours: null,
-		});
 		const items = [
 			item('Alpha', 'In Progress'),
 			item('Beta', 'Todo'),
@@ -438,6 +441,48 @@ describe('inProgressProjects', () => {
 		expect(
 			inProgressProjects(items).map((entry) => entry.name),
 		).toEqual(['Alpha', 'Gamma']);
+	});
+
+	it('filters by visible statuses, including no status', () => {
+		const items = [
+			item('Alpha', 'In Progress'),
+			item('Beta', 'On Hold'),
+			item('Gamma', 'Waiting'),
+			item('Delta', null),
+			item('Epsilon', 'Completed'),
+		];
+
+		expect(
+			projectsWithStatuses(items, [
+				'In Progress',
+				'On Hold',
+				'Waiting',
+			]).map((entry) => entry.name),
+		).toEqual(['Alpha', 'Beta', 'Gamma']);
+		expect(
+			projectsWithStatuses(items, ['No status']).map(
+				(entry) => entry.name,
+			),
+		).toEqual(['Delta']);
+	});
+
+	it('builds status options from configured and indexed values', () => {
+		const items = [
+			item('Alpha', 'In Progress'),
+			item('Beta', 'On Hold'),
+			item('Gamma', 'Custom'),
+			item('Delta', null),
+		];
+
+		expect(
+			dashboardStatusOptions(items, ['In Progress', 'On Hold', 'Waiting']),
+		).toEqual([
+			'In Progress',
+			'On Hold',
+			'Waiting',
+			'Custom',
+			'No status',
+		]);
 	});
 });
 

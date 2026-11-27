@@ -240,6 +240,62 @@ export function projectOverviewItems(
 	});
 }
 
+/** Sentinel used by the dashboard status chips for projects without a status. */
+export const NO_STATUS_DASHBOARD = 'No status';
+
+/** Projects whose status is in the visible list, matched case-insensitively. */
+export function projectsWithStatuses(
+	items: readonly ProjectOverviewItem[],
+	statuses: readonly string[],
+): ProjectOverviewItem[] {
+	const wanted = new Set(
+		statuses.map((status) => status.trim().toLowerCase()).filter(Boolean),
+	);
+
+	return items.filter((item) => {
+		const status = item.status?.trim();
+		if (!status) {
+			return wanted.has(NO_STATUS_DASHBOARD.toLowerCase());
+		}
+
+		return wanted.has(status.toLowerCase());
+	});
+}
+
+/** Configured statuses first, then indexed ones, then No status when needed. */
+export function dashboardStatusOptions(
+	projects: readonly ProjectOverviewItem[],
+	configured: readonly string[],
+): string[] {
+	const seen = new Map<string, string>();
+	const add = (status: string): void => {
+		const text = status.trim();
+		if (text) seen.set(text.toLowerCase(), text);
+	};
+
+	for (const status of configured) add(status);
+
+	const unknown = new Map<string, string>();
+	for (const project of projects) {
+		const status = project.status?.trim();
+		if (!status) continue;
+
+		const key = status.toLowerCase();
+		if (seen.has(key) || unknown.has(key)) continue;
+		unknown.set(key, status);
+	}
+
+	const options = [
+		...seen.values(),
+		...[...unknown.values()].sort(compareText),
+	];
+	if (projects.some((project) => !project.status?.trim())) {
+		options.push(NO_STATUS_DASHBOARD);
+	}
+
+	return options;
+}
+
 export function inProgressProjects(
 	items: readonly ProjectOverviewItem[],
 ): ProjectOverviewItem[] {

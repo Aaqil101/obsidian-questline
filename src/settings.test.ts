@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	DEFAULT_DASHBOARD_STATUSES,
 	DEFAULT_GOAL_CATEGORIES,
 	DEFAULT_PROJECT_STATUSES,
 	DEFAULT_SETTINGS,
@@ -45,6 +46,7 @@ describe('resolveConfig', () => {
 		expect(config.projectTag).toBe('project');
 		expect(config.goalCategories).toEqual(DEFAULT_GOAL_CATEGORIES);
 		expect(config.projectStatuses).toEqual(DEFAULT_PROJECT_STATUSES);
+		expect(config.dashboardStatuses).toEqual(DEFAULT_DASHBOARD_STATUSES);
 		expect(config.authors).toEqual([]);
 		expect(config.authorWikilink).toBe(false);
 		expect(config.progressMode).toBe('auto');
@@ -74,6 +76,7 @@ describe('resolveConfig', () => {
 		expect(config.projectStatuses).toEqual([
 			'Todo',
 			'Waiting',
+			'On Hold',
 			'In Progress',
 			'Completed',
 			'Discarded',
@@ -124,11 +127,13 @@ describe('resolveConfig', () => {
 		const config = resolveConfig({
 			goalCategories: [' Work ', 'work', '', 'Health'],
 			projectStatuses: ['Done', 'Done', 'In Progress'],
+			dashboardStatuses: [' In Progress ', 'in progress', 'Waiting'],
 			authors: [' Aaqil ', 'aaqil', '', 'Sam'],
 		});
 
 		expect(config.goalCategories).toEqual(['Work', 'Health']);
 		expect(config.projectStatuses).toEqual(['Done', 'In Progress']);
+		expect(config.dashboardStatuses).toEqual(['In Progress', 'Waiting']);
 		expect(config.authors).toEqual(['Aaqil', 'Sam']);
 	});
 
@@ -323,6 +328,7 @@ describe('resolveConfig', () => {
 			resolveConfig({ projectsStyle: 'table' }),
 			resolveConfig({ projectsStyle: 'cards' }),
 			resolveConfig({ boardDirection: 'vertical' }),
+			resolveConfig({ dashboardStatuses: ['Todo'] }),
 			resolveConfig({ skipControlsToBoard: true }),
 			resolveConfig({ goalCategories: ['Health'] }),
 		];

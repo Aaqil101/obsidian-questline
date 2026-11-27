@@ -797,6 +797,37 @@
 	height: 15px;
 }
 
+.questline-project-action,
+.questline-goal-action {
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-s);
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.questline-project-action:hover,
+.questline-project-action:focus-visible,
+.questline-goal-action:hover,
+.questline-goal-action:focus-visible {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.questline-project-action svg,
+.questline-goal-action svg {
+	width: 15px;
+	height: 15px;
+}
+
 .questline-dashboard-card:focus-visible {
 	outline: 2px solid var(--interactive-accent);
 	outline-offset: 2px;
@@ -808,7 +839,7 @@
 
 .questline-dashboard-card-header {
 	display: flex;
-	flex-wrap: wrap;
+	flex-wrap: nowrap;
 	align-items: center;
 	justify-content: space-between;
 	gap: 4px 8px;
@@ -817,12 +848,15 @@
 .questline-card-actions {
 	display: flex;
 	flex: 0 0 auto;
+	flex-wrap: nowrap;
 	align-items: center;
 	gap: 4px;
 	margin-left: auto;
 }
 
 .questline-dashboard-card-title {
+	flex: 1 1 auto;
+	min-width: 0;
 	font-size: var(--font-ui-medium);
 	font-weight: var(--font-semibold);
 	overflow-wrap: anywhere;
@@ -830,6 +864,36 @@
 
 .questline-dashboard-project-card .questline-dashboard-card-title {
 	color: var(--link-color);
+}
+
+.questline-dashboard-project-card .questline-dashboard-card-header {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+}
+
+.questline-dashboard-project-card
+	.questline-dashboard-card-header
+	.questline-dashboard-card-title {
+	grid-column: 1;
+	grid-row: 1;
+}
+
+.questline-dashboard-project-card
+	.questline-dashboard-card-header
+	.questline-dashboard-status {
+	grid-column: 1;
+	grid-row: 2;
+	justify-self: start;
+}
+
+.questline-dashboard-project-card
+	.questline-dashboard-card-header
+	.questline-card-actions {
+	grid-column: 2;
+	grid-row: 1;
+	justify-self: end;
+	margin-left: 0;
 }
 
 /* Due and status pills */
@@ -1434,10 +1498,24 @@
 	display: flex;
 	gap: 10px;
 	padding: 10px;
+	padding-right: 60px;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);
 	background-color: var(--background-secondary);
 	color: var(--text-normal);
+}
+
+.questline-dashboard-timeline-card-wrap {
+	position: relative;
+}
+
+.questline-dashboard-timeline-card-actions {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	z-index: 1;
+	display: flex;
+	gap: 2px;
 }
 
 .questline-dashboard-timeline-card.internal-link {
@@ -1580,6 +1658,120 @@
 	gap: 2px;
 	margin: 0 0 12px;
 	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+/* Dashboard layout and status controls */
+
+.questline-dashboard-controls {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+	margin: 0 0 12px;
+}
+
+.questline-dashboard-layouts {
+	display: flex;
+	overflow: hidden;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+}
+
+.questline-dashboard-layout {
+	padding: 3px 10px;
+	border: none;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	cursor: pointer;
+}
+
+.questline-dashboard-layout.is-active {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.questline-dashboard-status-chips {
+	display: flex;
+	flex-wrap: wrap;
+	overflow: hidden;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+}
+
+.questline-dashboard-status-chip {
+	padding: 3px 10px;
+	border: none;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	cursor: pointer;
+}
+
+.questline-dashboard-status-chip.is-active {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.questline-dashboard-more {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	margin-left: auto;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-s);
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.questline-dashboard-more:hover,
+.questline-dashboard-more:focus-visible {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.questline-dashboard-more svg {
+	width: 16px;
+	height: 16px;
+}
+
+.questline-dashboard-table-actions {
+	white-space: nowrap;
+	text-align: right;
+}
+
+.questline-dashboard-table-actions .questline-project-action,
+.questline-dashboard-table-actions .questline-goal-action {
+	margin-left: 5px;
+}
+
+.questline-dashboard-table-actions .questline-project-action:first-child,
+.questline-dashboard-table-actions .questline-goal-action:first-child {
+	margin-left: 0;
+}
+
+.questline-dashboard-project-chip-wrap {
+	position: relative;
+	display: flex;
+}
+
+.questline-dashboard-project-chip-wrap .questline-dashboard-project-chip {
+	padding-right: 32px;
+}
+
+.questline-dashboard-project-chip-wrap .questline-project-action {
+	position: absolute;
+	top: 4px;
+	right: 4px;
 }
 
 .questline-tab {
@@ -2132,8 +2324,27 @@
 	width: 100%;
 }
 
-.questline-board-cards .questline-dashboard-project-card .questline-dashboard-card-header {
-	align-items: flex-start;
+.questline-board-cards .questline-goals-board-top {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+}
+
+.questline-board-cards
+	.questline-goals-board-top
+	.questline-goals-board-title {
+	grid-column: 1;
+}
+
+.questline-board-cards
+	.questline-goals-board-top
+	.questline-card-actions {
+	grid-column: 2;
+	grid-row: 1;
+	justify-self: end;
+	justify-content: flex-end;
+	width: auto;
+	margin-left: 0;
 }
 
 /* Board drag and drop */
