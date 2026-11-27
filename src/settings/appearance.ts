@@ -89,11 +89,11 @@ export function appearanceGroup(host: SettingsHost): SettingDefinitionGroup {
 			),
 			renderRow(
 				'Progress bar style',
-				'Rainbow is a full-spectrum gradient. Multi-color uses hard-edged color blocks. Threshold changes color at 25%, 50%, and 75%. Accent color matches the theme.',
+				'Spectrum is a smooth full-color gradient. Multi-color uses hard-edged color blocks. Threshold changes color at 25%, 50%, and 75%. Accent color matches the theme.',
 				(setting) => {
 					setting.addDropdown((dropdown) =>
 						dropdown
-							.addOption('rainbow', 'Rainbow')
+							.addOption('rainbow', 'Spectrum')
 							.addOption('multicolor', 'Multi-color')
 							.addOption('threshold', 'Threshold')
 							.addOption('normal', 'Accent color')

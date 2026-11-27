@@ -47,7 +47,7 @@ describe('resolveConfig', () => {
 		expect(config.taskScope).toEqual({ type: 'all' });
 		expect(config.useTimekeep).toBe(true);
 		expect(config.openAfterCreate).toBe(true);
-		expect(config.progressBarStyle).toBe('rainbow');
+		expect(config.progressBarStyle).toBe('threshold');
 		expect(config.goalProjectsStyle).toBe('minimal');
 		expect(config.trackedTimeFormat).toBe('decimal');
 		expect(config.dashboardStyle).toBe('minimal');
@@ -195,7 +195,7 @@ describe('resolveConfig', () => {
 				'sparkles' as typeof DEFAULT_SETTINGS.progressBarStyle,
 		});
 
-		expect(invalid.progressBarStyle).toBe('rainbow');
+		expect(invalid.progressBarStyle).toBe('threshold');
 	});
 
 	it('accepts the goal projects styles and falls back otherwise', () => {

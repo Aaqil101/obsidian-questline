@@ -109,7 +109,7 @@ export const DEFAULT_SETTINGS: QuestlineSettings = {
 	taskScopeHeading: 'Tasks',
 	useTimekeep: true,
 	openAfterCreate: true,
-	progressBarStyle: 'rainbow',
+	progressBarStyle: 'threshold',
 	goalProjectsStyle: 'minimal',
 	trackedTimeFormat: 'decimal',
 	dashboardStyle: 'minimal',
