@@ -4,6 +4,7 @@ import type QuestlinePlugin from '../main';
 import { readTemplate } from '../templates/notes';
 import { GoalModal } from './goalModal';
 import { confirmCollision } from './confirmModal';
+import { registerEditCommands } from './editCommands';
 import { openNote, vaultPathExists, writeCreation } from './notes';
 import {
 	planGoal,
@@ -30,6 +31,7 @@ export function registerCreationCommands(plugin: QuestlinePlugin): void {
 		callback: () => openProjectModal(plugin),
 	});
 	registerGoalTemplateCommands(plugin);
+	registerEditCommands(plugin);
 }
 
 export function openGoalModal(plugin: QuestlinePlugin): void {
