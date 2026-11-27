@@ -17,7 +17,9 @@ import { registerDashboardView } from './views/dashboard';
 import { registerProgressBlocks } from './views/blocks';
 import {
 	createStarterTemplates as writeStarterTemplates,
+	templateNotePath,
 } from './templates/notes';
+import { STARTER_TEMPLATES } from './templates/builtin';
 import type { StarterResult } from './templates/starter';
 
 export default class QuestlinePlugin extends Plugin {
@@ -85,7 +87,26 @@ export default class QuestlinePlugin extends Plugin {
 
 	/** Write the editable starter templates, or report the ones already there. */
 	async createStarterTemplates(): Promise<StarterResult> {
-		return writeStarterTemplates(this.app, this.config);
+		const result = await writeStarterTemplates(this.app, this.config);
+		if (result.folderMissing) return result;
+
+		// Point the template settings at the starter files when they are blank,
+		// so the created notes are actually used by creation.
+		const patch: Partial<QuestlineSettings> = {};
+		for (const starter of STARTER_TEMPLATES) {
+			if (this.settings[starter.setting].trim()) continue;
+
+			const path = templateNotePath(
+				`${this.config.templateFolder}/${starter.fileName}`,
+			);
+			if (this.app.vault.getAbstractFileByPath(path)) {
+				patch[starter.setting] = path;
+			}
+		}
+
+		if (Object.keys(patch).length > 0) await this.updateSettings(patch);
+
+		return result;
 	}
 
 	private buildConfig(): QuestlineConfig {

@@ -198,7 +198,10 @@ function renderTemplatesPage(
 		button.setButtonText('Create').onClick(() => {
 			void plugin
 				.createStarterTemplates()
-				.then(announceStarterResult)
+				.then((result) => {
+					announceStarterResult(result);
+					host.refresh();
+				})
 				.catch(announceStarterError);
 		}),
 	);
