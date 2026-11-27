@@ -9,6 +9,13 @@ export interface GoalProblem {
 	message: string;
 }
 
+export type ProjectEditField = 'title' | 'status';
+
+export interface ProjectEditProblem {
+	field: ProjectEditField;
+	message: string;
+}
+
 type GoalValues = Pick<
 	GoalDraft,
 	'title' | 'category' | 'reason' | 'timespan'
@@ -48,6 +55,44 @@ export function validateGoal(draft: GoalValues): GoalProblem | null {
 			field: 'timespan',
 			message: 'Enter a timespan such as 6 Months, 1 Year, or Infinite.',
 		};
+	}
+
+	return null;
+}
+
+/**
+ * Editing is tolerant: a goal needs a title, and a timespan is checked only
+ * when it is present. Category and reason can be cleared.
+ */
+export function validateGoalEdit(draft: {
+	title: string;
+	timespan: string;
+}): GoalProblem | null {
+	if (!draft.title.trim()) {
+		return { field: 'title', message: 'Give the goal a title first.' };
+	}
+
+	const timespan = draft.timespan.trim();
+	if (timespan && !parseTimespan(timespan).valid) {
+		return {
+			field: 'timespan',
+			message: 'Enter a timespan such as 6 Months, 1 Year, or Infinite.',
+		};
+	}
+
+	return null;
+}
+
+export function validateProjectEdit(draft: {
+	title: string;
+	status: string;
+}): ProjectEditProblem | null {
+	if (!draft.title.trim()) {
+		return { field: 'title', message: 'Give the project a title first.' };
+	}
+
+	if (!draft.status.trim()) {
+		return { field: 'status', message: 'Choose a status for the project.' };
 	}
 
 	return null;

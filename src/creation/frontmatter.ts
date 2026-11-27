@@ -1,7 +1,8 @@
 /** Small frontmatter edits that keep the user's key casing intact. */
 import type { App, TFile } from 'obsidian';
 
-function findKey(
+/** The stored key that matches `key`, whatever its casing. */
+export function findFrontmatterKey(
 	frontmatter: Record<string, unknown>,
 	key: string,
 ): string | undefined {
@@ -16,7 +17,7 @@ export function setFrontmatterKey(
 	key: string,
 	value: unknown,
 ): void {
-	const existing = findKey(frontmatter, key);
+	const existing = findFrontmatterKey(frontmatter, key);
 	if (existing !== undefined && existing !== key) delete frontmatter[existing];
 
 	frontmatter[key] = value;
@@ -27,7 +28,7 @@ export function removeFrontmatterKey(
 	frontmatter: Record<string, unknown>,
 	key: string,
 ): void {
-	const existing = findKey(frontmatter, key);
+	const existing = findFrontmatterKey(frontmatter, key);
 	if (existing !== undefined) delete frontmatter[existing];
 }
 

@@ -1,5 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { removeFrontmatterKey, setFrontmatterKey } from './frontmatter';
+import {
+	findFrontmatterKey,
+	removeFrontmatterKey,
+	setFrontmatterKey,
+} from './frontmatter';
+
+describe('findFrontmatterKey', () => {
+	it('finds a key whatever its casing', () => {
+		const frontmatter = { Project_Template: '[[Template]]' };
+
+		expect(findFrontmatterKey(frontmatter, 'project_template')).toBe(
+			'Project_Template',
+		);
+		expect(findFrontmatterKey(frontmatter, 'status')).toBeUndefined();
+	});
+});
 
 describe('setFrontmatterKey', () => {
 	it('adds a key when it is missing', () => {
