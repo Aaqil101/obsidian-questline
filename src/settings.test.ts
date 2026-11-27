@@ -53,6 +53,7 @@ describe('resolveConfig', () => {
 		expect(config.dashboardStyle).toBe('minimal');
 		expect(config.goalsStyle).toBe('board');
 		expect(config.projectsStyle).toBe('board');
+		expect(config.boardDirection).toBe('horizontal');
 		expect(config.skipControlsToBoard).toBe(false);
 	});
 
@@ -285,6 +286,22 @@ describe('resolveConfig', () => {
 		expect(invalid.projectsStyle).toBe('board');
 	});
 
+	it('accepts the board directions and falls back otherwise', () => {
+		expect(
+			resolveConfig({ boardDirection: 'horizontal' }).boardDirection,
+		).toBe('horizontal');
+		expect(resolveConfig({ boardDirection: 'vertical' }).boardDirection).toBe(
+			'vertical',
+		);
+
+		const invalid = resolveConfig({
+			boardDirection:
+				'sideways' as typeof DEFAULT_SETTINGS.boardDirection,
+		});
+
+		expect(invalid.boardDirection).toBe('horizontal');
+	});
+
 	it('detects every repaint-only appearance change', () => {
 		const base = resolveConfig(DEFAULT_SETTINGS);
 		const changes = [
@@ -297,6 +314,7 @@ describe('resolveConfig', () => {
 			resolveConfig({ goalsStyle: 'cards' }),
 			resolveConfig({ projectsStyle: 'table' }),
 			resolveConfig({ projectsStyle: 'cards' }),
+			resolveConfig({ boardDirection: 'vertical' }),
 			resolveConfig({ skipControlsToBoard: true }),
 			resolveConfig({ goalCategories: ['Health'] }),
 		];

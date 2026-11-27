@@ -1897,9 +1897,17 @@
 	gap: 12px;
 	max-width: 100%;
 	padding-bottom: 6px;
-	overflow-x: auto;
-	scroll-snap-type: x proximity;
-	-webkit-overflow-scrolling: touch;
+}
+
+.questline-board--horizontal {
+	flex-direction: row;
+	flex-wrap: wrap;
+	overflow-x: visible;
+}
+
+.questline-board--vertical {
+	flex-direction: column;
+	overflow-x: visible;
 }
 
 .questline-board-lane {
@@ -1914,6 +1922,20 @@
 	border-radius: var(--radius-m);
 	background-color: var(--background-secondary);
 	scroll-snap-align: start;
+}
+
+.questline-board--vertical .questline-board-lane {
+	flex: 1 1 auto;
+	width: 100%;
+	min-width: 0;
+	max-width: none;
+}
+
+/* A full-width lane can use the horizontal space for its cards. */
+.questline-board--vertical .questline-board-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+	align-items: start;
 }
 
 .questline-board-lane-header {

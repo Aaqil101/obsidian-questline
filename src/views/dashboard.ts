@@ -1103,6 +1103,7 @@ export class QuestlineDashboardView extends ItemView {
 		renderBoard(containerEl, columns, {
 			laneClass: (column) => categoryClass(column.value),
 			emptyText: 'No goals',
+			direction: config.boardDirection,
 			renderCard: (cards, goal) => {
 				this.renderGoalBoardCard(cards, goal, config);
 			},
@@ -2113,6 +2114,7 @@ export class QuestlineDashboardView extends ItemView {
 		renderBoard(containerEl, columns, {
 			laneClass: (column) => statusClass(column.value),
 			emptyText: 'No projects',
+			direction: config.boardDirection,
 			renderCard: (cards, project) => {
 				this.renderProjectCard(
 					cards,

@@ -11,6 +11,9 @@ export type ProgressBarStyle =
 	| 'normal'
 	| 'threshold';
 
+/** How the board arranges its lanes. */
+export type BoardDirection = 'vertical' | 'horizontal';
+
 /** How the goal-projects block lists linked projects. */
 export type GoalProjectsStyle =
 	| 'minimal'
@@ -61,6 +64,8 @@ export interface QuestlineSettings {
 	dashboardStyle: DashboardStyle;
 	goalsStyle: GoalsStyle;
 	projectsStyle: ProjectsStyle;
+	/** Whether board lanes stack vertically or sit side by side. */
+	boardDirection: BoardDirection;
 	/** When enabled, Tab from the top of a board view focuses the board. */
 	skipControlsToBoard: boolean;
 }
@@ -115,6 +120,7 @@ export const DEFAULT_SETTINGS: QuestlineSettings = {
 	dashboardStyle: 'minimal',
 	goalsStyle: 'board',
 	projectsStyle: 'board',
+	boardDirection: 'horizontal',
 	skipControlsToBoard: false,
 };
 
@@ -145,6 +151,8 @@ export interface QuestlineConfig {
 	dashboardStyle: DashboardStyle;
 	goalsStyle: GoalsStyle;
 	projectsStyle: ProjectsStyle;
+	/** Whether board lanes stack vertically or sit side by side. */
+	boardDirection: BoardDirection;
 	/** When enabled, Tab from the top of a board view focuses the board. */
 	skipControlsToBoard: boolean;
 }
@@ -270,6 +278,12 @@ function cleanProjectsStyle(value: unknown): ProjectsStyle {
 		: DEFAULT_SETTINGS.projectsStyle;
 }
 
+function cleanBoardDirection(value: unknown): BoardDirection {
+	return value === 'horizontal' || value === 'vertical'
+		? value
+		: DEFAULT_SETTINGS.boardDirection;
+}
+
 function cleanTaskScope(mode: unknown, heading: unknown): TaskScope {
 	const name = typeof heading === 'string' ? heading.trim() : '';
 	if (mode !== 'heading' || !name) return ALL_TASKS;
@@ -355,6 +369,7 @@ export function resolveConfig(
 		dashboardStyle: cleanDashboardStyle(stored.dashboardStyle),
 		goalsStyle: cleanGoalsStyle(stored.goalsStyle),
 		projectsStyle: cleanProjectsStyle(stored.projectsStyle),
+		boardDirection: cleanBoardDirection(stored.boardDirection),
 		skipControlsToBoard: cleanBoolean(
 			stored.skipControlsToBoard,
 			DEFAULT_SETTINGS.skipControlsToBoard,
@@ -381,6 +396,7 @@ export function appearanceChanged(
 		next.dashboardStyle !== previous.dashboardStyle ||
 		next.goalsStyle !== previous.goalsStyle ||
 		next.projectsStyle !== previous.projectsStyle ||
+		next.boardDirection !== previous.boardDirection ||
 		next.skipControlsToBoard !== previous.skipControlsToBoard ||
 		!sameStrings(next.goalCategories, previous.goalCategories)
 	);

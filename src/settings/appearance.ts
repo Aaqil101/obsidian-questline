@@ -1,5 +1,6 @@
 import type { SettingDefinitionGroup } from 'obsidian';
 import type {
+	BoardDirection,
 	DashboardStyle,
 	GoalProjectsStyle,
 	GoalsStyle,
@@ -82,6 +83,27 @@ export function appearanceGroup(host: SettingsHost): SettingDefinitionGroup {
 											: 'table';
 								void plugin.updateSettings({
 									projectsStyle,
+								});
+							}),
+					);
+				},
+			),
+			renderRow(
+				'Board direction',
+				'Vertical stacks the lanes top to bottom. Horizontal places them side by side and wraps them onto new rows.',
+				(setting) => {
+					setting.addDropdown((dropdown) =>
+						dropdown
+							.addOption('vertical', 'Vertical')
+							.addOption('horizontal', 'Horizontal')
+							.setValue(plugin.settings.boardDirection)
+							.onChange((value) => {
+								const boardDirection: BoardDirection =
+									value === 'horizontal'
+										? 'horizontal'
+										: 'vertical';
+								void plugin.updateSettings({
+									boardDirection,
 								});
 							}),
 					);

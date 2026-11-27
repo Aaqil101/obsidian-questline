@@ -1,4 +1,5 @@
 /** Shared lane grouping and rendering for the Goals and Projects boards. */
+import type { BoardDirection } from '../settings/types';
 import { compareText } from './projects';
 
 export interface BoardColumn<T> {
@@ -16,6 +17,8 @@ export interface BoardRenderOptions<T> {
 	laneClass?: (column: BoardColumn<T>) => string;
 	/** Message shown in a lane with no cards. Defaults to `No items`. */
 	emptyText?: string;
+	/** Whether lanes stack vertically or sit side by side. */
+	direction?: BoardDirection;
 }
 
 export type BoardKind = 'goal' | 'project';
@@ -176,7 +179,10 @@ export function renderBoard<T>(
 	columns: readonly BoardColumn<T>[],
 	options: BoardRenderOptions<T>,
 ): void {
-	const board = containerEl.createDiv({ cls: 'questline-board' });
+	const direction = options.direction ?? 'vertical';
+	const board = containerEl.createDiv({
+		cls: `questline-board questline-board--${direction}`,
+	});
 
 	for (const column of columns) {
 		const extra = options.laneClass?.(column) ?? '';
