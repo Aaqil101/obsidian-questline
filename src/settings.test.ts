@@ -56,6 +56,35 @@ describe('resolveConfig', () => {
 		expect(config.skipControlsToBoard).toBe(false);
 	});
 
+	it('uses the reference lanes in order by default', () => {
+		const config = resolveConfig({});
+
+		expect(config.goalCategories).toEqual([
+			'Physical',
+			'Knowledge',
+			'Life',
+			'Professional',
+			'Wealth',
+		]);
+		expect(config.projectStatuses).toEqual([
+			'Todo',
+			'Waiting',
+			'In Progress',
+			'Completed',
+			'Discarded',
+		]);
+	});
+
+	it('keeps stored category and status lists in their saved order', () => {
+		const config = resolveConfig({
+			goalCategories: ['Wealth', 'Life'],
+			projectStatuses: ['Waiting', 'Todo'],
+		});
+
+		expect(config.goalCategories).toEqual(['Wealth', 'Life']);
+		expect(config.projectStatuses).toEqual(['Waiting', 'Todo']);
+	});
+
 	it('normalizes custom tags and falls back when they are blank', () => {
 		const custom = resolveConfig({ goalTag: ' #Outcome ', projectTag: '#Effort' });
 		const blank = resolveConfig({ goalTag: '  ', projectTag: '#' });

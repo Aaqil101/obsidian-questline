@@ -222,9 +222,9 @@ describe('goalOverviewItems', () => {
 
 		expect(items.map((item) => item.name)).toEqual([
 			'Beta',
+			'Delta',
 			'Alpha',
 			'Archived',
-			'Delta',
 			'Gamma',
 			'Epsilon',
 		]);

@@ -71,7 +71,7 @@ export class GoalModal extends Modal {
 			.setDesc('Required. Suggestions come from the goal categories.')
 			.addText((text) => {
 				inputs.category = text;
-				text.setPlaceholder('Learning');
+				text.setPlaceholder('Physical');
 				new ValueSuggest(
 					this.app,
 					text.inputEl,

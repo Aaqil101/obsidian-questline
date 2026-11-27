@@ -66,18 +66,19 @@ export interface QuestlineSettings {
 }
 
 export const DEFAULT_GOAL_CATEGORIES = [
+	'Physical',
+	'Knowledge',
+	'Life',
 	'Professional',
-	'Personal',
-	'Learning',
-	'Health',
-	'Finance',
+	'Wealth',
 ];
 
 export const DEFAULT_PROJECT_STATUSES = [
 	'Todo',
+	'Waiting',
 	'In Progress',
 	'Completed',
-	'On Hold',
+	'Discarded',
 ];
 
 /** Goal notes are dated by default so they sort chronologically. */
