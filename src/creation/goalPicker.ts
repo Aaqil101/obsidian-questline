@@ -43,6 +43,15 @@ class GoalPickModal extends FuzzySuggestModal<GoalNode> {
 	}
 }
 
+/** Open the fuzzy goal list for one-off picks, such as a command. */
+export function pickGoal(
+	app: App,
+	goals: readonly GoalNode[],
+	onPick: (goal: GoalNode) => void,
+): void {
+	new GoalPickModal(app, goals, onPick).open();
+}
+
 export interface GoalPickerOptions {
 	app: App;
 	goals: readonly GoalNode[];

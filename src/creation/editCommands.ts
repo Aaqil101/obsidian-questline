@@ -1,5 +1,5 @@
 /** Edit commands and the read-write half of editing existing notes. */
-import { Notice, TFile } from 'obsidian';
+import { FuzzySuggestModal, Notice, TFile, type App } from 'obsidian';
 import { goalTitle } from '../index/names';
 import type { GoalNode, ProjectNode } from '../index/types';
 import type QuestlinePlugin from '../main';
@@ -18,6 +18,7 @@ import {
 import { EditGoalModal } from './editGoalModal';
 import { EditProjectModal } from './editProjectModal';
 import { editFrontmatter } from './frontmatter';
+import { pickGoal } from './goalPicker';
 import { vaultPathExists } from './notes';
 
 function activeGoal(plugin: QuestlinePlugin): GoalNode | null {
@@ -34,31 +35,83 @@ function activeProject(plugin: QuestlinePlugin): ProjectNode | null {
 	return plugin.getIndex().projectByPath.get(path) ?? null;
 }
 
+class ProjectPickModal extends FuzzySuggestModal<ProjectNode> {
+	constructor(
+		app: App,
+		private readonly projects: readonly ProjectNode[],
+		private readonly onPick: (project: ProjectNode) => void,
+	) {
+		super(app);
+		this.emptyStateText = 'No project matches that.';
+	}
+
+	async onOpen(): Promise<void> {
+		await super.onOpen();
+		this.setPlaceholder('Edit a project.');
+	}
+
+	getItems(): ProjectNode[] {
+		return [...this.projects];
+	}
+
+	getItemText(item: ProjectNode): string {
+		return `${item.name} — ${item.fields.status ?? 'No status'}`;
+	}
+
+	onChooseItem(item: ProjectNode): void {
+		this.onPick(item);
+	}
+}
+
 export function registerEditCommands(plugin: QuestlinePlugin): void {
 	plugin.addCommand({
 		id: 'edit-goal',
 		name: 'Edit goal',
-		checkCallback: (checking) => {
-			const goal = activeGoal(plugin);
-			if (!goal) return false;
-
-			if (!checking) openGoalEditor(plugin, goal);
-
-			return true;
-		},
+		callback: () => chooseGoal(plugin),
 	});
 	plugin.addCommand({
 		id: 'edit-project',
 		name: 'Edit project',
-		checkCallback: (checking) => {
-			const project = activeProject(plugin);
-			if (!project) return false;
-
-			if (!checking) openProjectEditor(plugin, project);
-
-			return true;
-		},
+		callback: () => chooseProject(plugin),
 	});
+}
+
+function chooseGoal(plugin: QuestlinePlugin): void {
+	const active = activeGoal(plugin);
+	if (active) {
+		openGoalEditor(plugin, active);
+
+		return;
+	}
+
+	const goals = plugin.getIndex().goals;
+	if (goals.length === 0) {
+		new Notice('No goals are indexed yet.');
+
+		return;
+	}
+
+	pickGoal(plugin.app, goals, (goal) => openGoalEditor(plugin, goal));
+}
+
+function chooseProject(plugin: QuestlinePlugin): void {
+	const active = activeProject(plugin);
+	if (active) {
+		openProjectEditor(plugin, active);
+
+		return;
+	}
+
+	const projects = plugin.getIndex().projects;
+	if (projects.length === 0) {
+		new Notice('No projects are indexed yet.');
+
+		return;
+	}
+
+	new ProjectPickModal(plugin.app, projects, (project) =>
+		openProjectEditor(plugin, project),
+	).open();
 }
 
 /** Add any newly typed author names to the known-author list. */

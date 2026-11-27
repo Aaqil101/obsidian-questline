@@ -4,6 +4,7 @@ import {
 	Notice,
 	Setting,
 	type App,
+	type TextAreaComponent,
 	type TextComponent,
 } from 'obsidian';
 import type { GoalNode, ProjectNode } from '../index/types';
@@ -20,7 +21,7 @@ import { validateProjectEdit } from './validate';
 interface ProjectInputs {
 	title?: TextComponent;
 	author?: TextComponent;
-	subtitle?: TextComponent;
+	subtitle?: TextAreaComponent;
 }
 
 export class EditProjectModal extends Modal {
@@ -143,13 +144,15 @@ export class EditProjectModal extends Modal {
 			});
 		}
 
-		new Setting(contentEl)
+		const subtitleSetting = new Setting(contentEl)
 			.setName('Subtitle')
 			.setDesc('Optional. A short line under the title.')
-			.addText((text) => {
+			.addTextArea((text) => {
 				inputs.subtitle = text;
 				text.setValue(draft.subtitle);
+				text.inputEl.rows = 9;
 			});
+		subtitleSetting.settingEl.addClass('questline-reason-setting');
 
 		new Setting(contentEl)
 			.addButton((button) =>

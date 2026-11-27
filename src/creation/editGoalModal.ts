@@ -10,7 +10,6 @@ import {
 import type { GoalNode } from '../index/types';
 import type { QuestlineConfig } from '../settings/types';
 import { goalEditDraft, type GoalEditDraft } from './edit';
-import { ValueSuggest } from './suggest';
 import { validateGoalEdit, type GoalField } from './validate';
 
 const TIMESPAN_SUGGESTIONS = [
@@ -23,9 +22,7 @@ const TIMESPAN_SUGGESTIONS = [
 
 interface GoalInputs {
 	title?: TextComponent;
-	category?: TextComponent;
 	reason?: TextAreaComponent;
-	timespan?: TextComponent;
 }
 
 export class EditGoalModal extends Modal {
@@ -46,6 +43,9 @@ export class EditGoalModal extends Modal {
 		this.modalEl.addClass('questline-modal');
 
 		const inputs: GoalInputs = {};
+		let category = draft.category;
+		let timespan = draft.timespan;
+		let timespanInput: HTMLSelectElement | null = null;
 
 		new Setting(contentEl)
 			.setName('Title')
@@ -59,18 +59,30 @@ export class EditGoalModal extends Modal {
 
 		new Setting(contentEl)
 			.setName('Category')
-			.setDesc('Suggestions come from the goal categories.')
-			.addText((text) => {
-				inputs.category = text;
-				text.setValue(draft.category);
-				new ValueSuggest(
-					this.app,
-					text.inputEl,
-					this.config.goalCategories,
-				);
+			.setDesc('Choose a category, or leave it without one.')
+			.addDropdown((dropdown) => {
+				const options = [...this.config.goalCategories];
+				if (
+					category &&
+					!options.some(
+						(option) =>
+							option.toLowerCase() === category.toLowerCase(),
+					)
+				) {
+					options.push(category);
+				}
+
+				dropdown.addOption('', 'No category');
+				for (const option of options) {
+					dropdown.addOption(option, option);
+				}
+
+				dropdown.setValue(category).onChange((value) => {
+					category = value;
+				});
 			});
 
-		new Setting(contentEl)
+		const reasonSetting = new Setting(contentEl)
 			.setName('Reason')
 			.setDesc('Optional. Why does this goal matter?')
 			.addTextArea((text) => {
@@ -78,14 +90,32 @@ export class EditGoalModal extends Modal {
 				text.setValue(draft.reason);
 				text.inputEl.rows = 9;
 			});
+		reasonSetting.settingEl.addClass('questline-reason-setting');
 
 		new Setting(contentEl)
 			.setName('Timespan')
 			.setDesc('Optional. A due date is measured from today.')
-			.addText((text) => {
-				inputs.timespan = text;
-				text.setValue(draft.timespan);
-				new ValueSuggest(this.app, text.inputEl, TIMESPAN_SUGGESTIONS);
+			.addDropdown((dropdown) => {
+				const options = [...TIMESPAN_SUGGESTIONS];
+				if (
+					timespan &&
+					!options.some(
+						(option) =>
+							option.toLowerCase() === timespan.toLowerCase(),
+					)
+				) {
+					options.push(timespan);
+				}
+
+				dropdown.addOption('', 'No timespan');
+				for (const option of options) {
+					dropdown.addOption(option, option);
+				}
+
+				timespanInput = dropdown.selectEl;
+				dropdown.setValue(timespan).onChange((value) => {
+					timespan = value;
+				});
 			});
 
 		new Setting(contentEl)
@@ -96,7 +126,9 @@ export class EditGoalModal extends Modal {
 				button
 					.setButtonText('Save changes')
 					.setCta()
-					.onClick(() => this.submit(inputs)),
+					.onClick(() =>
+						this.submit(inputs, category, timespan, timespanInput),
+					),
 			);
 
 		inputs.title?.inputEl.focus();
@@ -106,18 +138,23 @@ export class EditGoalModal extends Modal {
 		this.contentEl.empty();
 	}
 
-	private submit(inputs: GoalInputs): void {
+	private submit(
+		inputs: GoalInputs,
+		category: string,
+		timespan: string,
+		timespanInput: HTMLSelectElement | null,
+	): void {
 		const draft: GoalEditDraft = {
 			title: inputs.title?.getValue() ?? '',
-			category: inputs.category?.getValue() ?? '',
+			category,
 			reason: inputs.reason?.getValue() ?? '',
-			timespan: inputs.timespan?.getValue() ?? '',
+			timespan,
 		};
 
 		const problem = validateGoalEdit(draft);
 		if (problem) {
 			new Notice(problem.message);
-			this.focus(problem.field, inputs);
+			this.focus(problem.field, inputs, timespanInput);
 
 			return;
 		}
@@ -126,14 +163,17 @@ export class EditGoalModal extends Modal {
 		this.onSave(draft);
 	}
 
-	private focus(field: GoalField, inputs: GoalInputs): void {
-		const input =
-			field === 'title'
-				? inputs.title
-				: field === 'timespan'
-					? inputs.timespan
-					: undefined;
+	private focus(
+		field: GoalField,
+		inputs: GoalInputs,
+		timespanInput: HTMLSelectElement | null,
+	): void {
+		if (field === 'timespan') {
+			timespanInput?.focus();
 
-		input?.inputEl.focus();
+			return;
+		}
+
+		inputs.title?.inputEl.focus();
 	}
 }
