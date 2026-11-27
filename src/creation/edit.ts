@@ -7,6 +7,7 @@ import { noteFolder } from '../index/build';
 import { goalTitle } from '../index/names';
 import type { GoalNode, ProjectNode } from '../index/types';
 import { findFrontmatterKey, removeFrontmatterKey } from './frontmatter';
+import { authorField } from './authors';
 import {
 	allocatePath,
 	noteLink,
@@ -133,23 +134,6 @@ export function unresolvedGoalCount(
 	return count;
 }
 
-/** Authors are stored comma-separated in the editor. */
-export function parseAuthors(value: string): string[] {
-	const authors: string[] = [];
-	const seen = new Set<string>();
-
-	for (const part of value.split(',')) {
-		const text = part.trim();
-		const key = text.toLowerCase();
-		if (!text || seen.has(key)) continue;
-
-		seen.add(key);
-		authors.push(text);
-	}
-
-	return authors;
-}
-
 function writeKey(
 	frontmatter: Record<string, unknown>,
 	key: string,
@@ -202,6 +186,7 @@ export function applyGoalEdit(
 export function applyProjectEdit(
 	frontmatter: Record<string, unknown>,
 	draft: ProjectEditDraft,
+	authorWikilink = false,
 ): void {
 	writeAliases(frontmatter, draft.title);
 
@@ -211,8 +196,8 @@ export function applyProjectEdit(
 
 	writeKey(frontmatter, 'status', draft.status.trim());
 
-	const authors = parseAuthors(draft.author);
-	if (authors.length === 0) {
+	const authors = authorField(draft.author, authorWikilink);
+	if (authors === null) {
 		removeFrontmatterKey(frontmatter, 'author');
 		removeFrontmatterKey(frontmatter, 'authors');
 	} else {
@@ -220,7 +205,7 @@ export function applyProjectEdit(
 			findFrontmatterKey(frontmatter, 'author') ??
 			findFrontmatterKey(frontmatter, 'authors') ??
 			'author';
-		writeKey(frontmatter, key, authors.length === 1 ? authors[0] : authors);
+		writeKey(frontmatter, key, authors);
 	}
 
 	writeOrRemove(frontmatter, 'subtitle', draft.subtitle);

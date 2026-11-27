@@ -36,13 +36,17 @@ describe('resolveConfig', () => {
 
 		expect(config.goalFolder).toBe('goals');
 		expect(config.projectFolder).toBe('projects');
+		expect(config.authorFolder).toBe('authors');
 		expect(config.templateFolder).toBe('templates');
 		expect(config.goalTemplate).toBe('');
 		expect(config.projectTemplate).toBe('');
+		expect(config.authorTemplate).toBe('');
 		expect(config.goalTag).toBe('goal');
 		expect(config.projectTag).toBe('project');
 		expect(config.goalCategories).toEqual(DEFAULT_GOAL_CATEGORIES);
 		expect(config.projectStatuses).toEqual(DEFAULT_PROJECT_STATUSES);
+		expect(config.authors).toEqual([]);
+		expect(config.authorWikilink).toBe(false);
 		expect(config.progressMode).toBe('auto');
 		expect(config.taskScope).toEqual({ type: 'all' });
 		expect(config.useTimekeep).toBe(true);
@@ -120,10 +124,12 @@ describe('resolveConfig', () => {
 		const config = resolveConfig({
 			goalCategories: [' Work ', 'work', '', 'Health'],
 			projectStatuses: ['Done', 'Done', 'In Progress'],
+			authors: [' Aaqil ', 'aaqil', '', 'Sam'],
 		});
 
 		expect(config.goalCategories).toEqual(['Work', 'Health']);
 		expect(config.projectStatuses).toEqual(['Done', 'In Progress']);
+		expect(config.authors).toEqual(['Aaqil', 'Sam']);
 	});
 
 	it('keeps an explicitly empty list empty', () => {
@@ -173,11 +179,13 @@ describe('resolveConfig', () => {
 			useTimekeep: false,
 			openAfterCreate: 'yes' as unknown as boolean,
 			skipControlsToBoard: true,
+			authorWikilink: true,
 		});
 
 		expect(config.useTimekeep).toBe(false);
 		expect(config.openAfterCreate).toBe(true);
 		expect(config.skipControlsToBoard).toBe(true);
+		expect(config.authorWikilink).toBe(true);
 	});
 
 	it('accepts the known progress bar styles and falls back otherwise', () => {

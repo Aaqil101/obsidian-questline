@@ -5,7 +5,6 @@ import {
 	applyGoalEdit,
 	applyProjectEdit,
 	goalEditDraft,
-	parseAuthors,
 	planRename,
 	projectEditDraft,
 	projectGoalNodes,
@@ -135,12 +134,6 @@ describe('projectEditDraft', () => {
 	});
 });
 
-describe('parseAuthors', () => {
-	it('splits, trims, and removes duplicates', () => {
-		expect(parseAuthors(' Aaqil, sam, AAQIL, , ')).toEqual(['Aaqil', 'sam']);
-	});
-});
-
 describe('applyGoalEdit', () => {
 	it('updates values and keeps the existing alias key casing', () => {
 		const frontmatter: Record<string, unknown> = {
@@ -226,6 +219,24 @@ describe('applyProjectEdit', () => {
 		});
 
 		expect(frontmatter.Author).toBe('New');
+	});
+
+	it('writes authors as wikilinks when enabled', () => {
+		const frontmatter: Record<string, unknown> = {};
+
+		applyProjectEdit(
+			frontmatter,
+			{
+				title: 'Project',
+				goals: [],
+				status: 'Todo',
+				author: 'Aaqil, Sam',
+				subtitle: '',
+			},
+			true,
+		);
+
+		expect(frontmatter.author).toEqual(['[[Aaqil]]', '[[Sam]]']);
 	});
 });
 

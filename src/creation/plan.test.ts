@@ -367,6 +367,22 @@ describe('planProject', () => {
 		);
 	});
 
+	it('writes authors as wikilinks when enabled', () => {
+		const plan = planProject(
+			projectDraft({ author: 'Aaqil, Sam' }),
+			{
+				...context(),
+				config: { ...CONFIG, authorWikilink: true },
+			},
+			{ template: null },
+		);
+
+		expect(plan.note.frontmatter.author).toEqual([
+			'[[Aaqil]]',
+			'[[Sam]]',
+		]);
+	});
+
 	it('writes multiple goal links and joins template tokens', () => {
 		const plan = planProject(
 			projectDraft({

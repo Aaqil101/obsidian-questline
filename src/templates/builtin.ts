@@ -30,6 +30,13 @@ export const BUILTIN_PROJECT: TemplateDocument = {
 	body: projectTemplateBody(),
 };
 
+export const BUILTIN_AUTHOR: TemplateDocument = {
+	frontmatter: null,
+	body: `## About
+
+`,
+};
+
 const GOAL_HINT = `%%
 Questline goal template.
 The body below is copied into every new goal. Questline writes the
@@ -51,9 +58,22 @@ const STARTER_PROJECT_BODY = `${PROJECT_HINT}
 
 ${BUILTIN_PROJECT.body}`;
 
+const AUTHOR_HINT = `%%
+Questline author template.
+The body below is copied into every new author note.
+Questline writes the frontmatter itself, so this note only needs the text
+you want to reuse.
+%%`;
+
+const STARTER_AUTHOR_BODY = `${AUTHOR_HINT}
+
+${BUILTIN_AUTHOR.body}`;
+
 export interface StarterTemplate {
 	/** File name without the folder or `.md` extension. */
 	fileName: string;
+	/** Settings key that should point at this template when it is unset. */
+	setting: 'goalTemplate' | 'projectTemplate' | 'authorTemplate';
 	document: TemplateDocument;
 }
 
@@ -61,6 +81,7 @@ export interface StarterTemplate {
 export const STARTER_TEMPLATES: readonly StarterTemplate[] = [
 	{
 		fileName: 'Goal template',
+		setting: 'goalTemplate',
 		document: {
 			frontmatter: { type: TEMPLATE_TYPE },
 			body: STARTER_GOAL_BODY,
@@ -68,9 +89,18 @@ export const STARTER_TEMPLATES: readonly StarterTemplate[] = [
 	},
 	{
 		fileName: 'Project template',
+		setting: 'projectTemplate',
 		document: {
 			frontmatter: { type: TEMPLATE_TYPE },
 			body: STARTER_PROJECT_BODY,
+		},
+	},
+	{
+		fileName: 'Author template',
+		setting: 'authorTemplate',
+		document: {
+			frontmatter: { type: TEMPLATE_TYPE },
+			body: STARTER_AUTHOR_BODY,
 		},
 	},
 ];

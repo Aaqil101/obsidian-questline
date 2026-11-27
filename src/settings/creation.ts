@@ -1,4 +1,5 @@
 import { Setting, type SettingDefinitionGroup } from 'obsidian';
+import { ValueSuggest } from '../creation/suggest';
 import {
 	DEFAULT_GOAL_FILENAME,
 	DEFAULT_PROJECT_FILENAME,
@@ -49,12 +50,31 @@ function renderDefaultsPage(
 	new Setting(card)
 		.setName('Default author')
 		.setDesc('Used when a new goal or project has no author.')
-		.addText((text) =>
+		.addText((text) => {
 			text
 				.setPlaceholder('Your name')
 				.setValue(settings.defaultAuthor)
 				.onChange((value) => {
 					void plugin.updateSettings({ defaultAuthor: value });
+				});
+			const authors = [
+				...new Set(
+					[...settings.authors, settings.defaultAuthor].filter(
+						(name) => name.trim() !== '',
+					),
+				),
+			];
+			new ValueSuggest(plugin.app, text.inputEl, authors);
+		});
+
+	new Setting(card)
+		.setName('Link authors as wikilinks')
+		.setDesc('Save project authors as [[author]] links.')
+		.addToggle((toggle) =>
+			toggle
+				.setValue(settings.authorWikilink)
+				.onChange((value) => {
+					void plugin.updateSettings({ authorWikilink: value });
 				}),
 		);
 

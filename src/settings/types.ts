@@ -41,16 +41,23 @@ export type TaskScopeMode = 'all' | 'heading';
 export interface QuestlineSettings {
 	goalFolder: string;
 	projectFolder: string;
+	authorFolder: string;
 	templateFolder: string;
 	/** Vault path of the global goal template, or blank for the built-in one. */
 	goalTemplate: string;
 	/** Vault path of the global project template, or blank for the built-in one. */
 	projectTemplate: string;
+	/** Vault path of the author template, or blank for the built-in one. */
+	authorTemplate: string;
 	goalTag: string;
 	projectTag: string;
 	goalCategories: string[];
 	projectStatuses: string[];
+	/** Known authors offered by the author picker. */
+	authors: string[];
 	defaultAuthor: string;
+	/** Save project authors as wikilinks. */
+	authorWikilink: boolean;
 	goalFilename: string;
 	projectFilename: string;
 	progressMode: ProgressMode;
@@ -94,19 +101,24 @@ export const DEFAULT_PROJECT_FILENAME = '{{goal_name}} - {{title}}';
 
 export const DEFAULT_GOAL_FOLDER = 'goals';
 export const DEFAULT_PROJECT_FOLDER = 'projects';
+export const DEFAULT_AUTHOR_FOLDER = 'authors';
 export const DEFAULT_TEMPLATE_FOLDER = 'templates';
 
 export const DEFAULT_SETTINGS: QuestlineSettings = {
 	goalFolder: DEFAULT_GOAL_FOLDER,
 	projectFolder: DEFAULT_PROJECT_FOLDER,
+	authorFolder: DEFAULT_AUTHOR_FOLDER,
 	templateFolder: DEFAULT_TEMPLATE_FOLDER,
 	goalTemplate: '',
 	projectTemplate: '',
+	authorTemplate: '',
 	goalTag: 'goal',
 	projectTag: 'project',
 	goalCategories: [...DEFAULT_GOAL_CATEGORIES],
 	projectStatuses: [...DEFAULT_PROJECT_STATUSES],
+	authors: [],
 	defaultAuthor: '',
+	authorWikilink: false,
 	goalFilename: DEFAULT_GOAL_FILENAME,
 	projectFilename: DEFAULT_PROJECT_FILENAME,
 	progressMode: 'auto',
@@ -131,14 +143,18 @@ export const DEFAULT_SETTINGS: QuestlineSettings = {
 export interface QuestlineConfig {
 	goalFolder: string;
 	projectFolder: string;
+	authorFolder: string;
 	templateFolder: string;
 	goalTemplate: string;
 	projectTemplate: string;
+	authorTemplate: string;
 	goalTag: string;
 	projectTag: string;
 	goalCategories: readonly string[];
 	projectStatuses: readonly string[];
+	authors: readonly string[];
 	defaultAuthor: string;
+	authorWikilink: boolean;
 	goalFilename: string;
 	projectFilename: string;
 	progressMode: ProgressMode;
@@ -330,6 +346,11 @@ export function resolveConfig(
 			DEFAULT_PROJECT_FOLDER,
 			checkFolder,
 		),
+		authorFolder: safeFolder(
+			stored.authorFolder,
+			DEFAULT_AUTHOR_FOLDER,
+			checkFolder,
+		),
 		templateFolder: safeFolder(
 			stored.templateFolder,
 			DEFAULT_TEMPLATE_FOLDER,
@@ -337,6 +358,7 @@ export function resolveConfig(
 		),
 		goalTemplate: normalizeTemplate(stored.goalTemplate),
 		projectTemplate: normalizeTemplate(stored.projectTemplate),
+		authorTemplate: normalizeTemplate(stored.authorTemplate),
 		goalTag: normalizeTagSetting(stored.goalTag, DEFAULT_SETTINGS.goalTag),
 		projectTag: normalizeTagSetting(
 			stored.projectTag,
@@ -350,7 +372,12 @@ export function resolveConfig(
 			stored.projectStatuses,
 			DEFAULT_PROJECT_STATUSES,
 		),
+		authors: cleanList(stored.authors, DEFAULT_SETTINGS.authors),
 		defaultAuthor: cleanText(stored.defaultAuthor, ''),
+		authorWikilink: cleanBoolean(
+			stored.authorWikilink,
+			DEFAULT_SETTINGS.authorWikilink,
+		),
 		goalFilename: cleanText(stored.goalFilename, DEFAULT_GOAL_FILENAME),
 		projectFilename: cleanText(
 			stored.projectFilename,

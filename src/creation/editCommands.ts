@@ -3,6 +3,8 @@ import { Notice, TFile } from 'obsidian';
 import { goalTitle } from '../index/names';
 import type { GoalNode, ProjectNode } from '../index/types';
 import type QuestlinePlugin from '../main';
+import { mergeAuthors, parseAuthors } from './authors';
+import { ensureAuthorNotes } from './authorNotes';
 import { confirmRenameCollision } from './confirmModal';
 import {
 	applyGoalEdit,
@@ -57,6 +59,20 @@ export function registerEditCommands(plugin: QuestlinePlugin): void {
 			return true;
 		},
 	});
+}
+
+/** Add any newly typed author names to the known-author list. */
+export function rememberProjectAuthors(
+	plugin: QuestlinePlugin,
+	value: string,
+): void {
+	const names = parseAuthors(value);
+	if (names.length === 0) return;
+
+	const authors = mergeAuthors(plugin.settings.authors, names);
+	if (authors.length === plugin.settings.authors.length) return;
+
+	void plugin.updateSettings({ authors });
 }
 
 export function openGoalEditor(plugin: QuestlinePlugin, goal: GoalNode): void {
@@ -185,8 +201,21 @@ async function saveProjectEdit(
 		}
 
 		await editFrontmatter(app, file, (frontmatter) => {
-			applyProjectEdit(frontmatter, draft);
+			applyProjectEdit(
+				frontmatter,
+				draft,
+				plugin.getConfig().authorWikilink,
+			);
 		});
+		rememberProjectAuthors(plugin, draft.author);
+		if (plugin.getConfig().authorWikilink) {
+			await ensureAuthorNotes(
+				app,
+				plugin.getConfig(),
+				draft.author,
+				project.path,
+			);
+		}
 
 		if (rename) {
 			try {

@@ -14,6 +14,7 @@ import {
 	type ProjectEditDraft,
 } from './edit';
 import { GoalPicker } from './goalPicker';
+import { ValueSuggest } from './suggest';
 import { validateProjectEdit } from './validate';
 
 interface ProjectInputs {
@@ -118,13 +119,29 @@ export class EditProjectModal extends Modal {
 				});
 			});
 
+		const authorSuggestions = [
+			...new Set(
+				[...this.config.authors, this.config.defaultAuthor].filter(
+					(name) => name.trim() !== '',
+				),
+			),
+		];
+
 		new Setting(contentEl)
 			.setName('Author')
 			.setDesc('Optional. Separate several authors with commas.')
 			.addText((text) => {
 				inputs.author = text;
 				text.setValue(draft.author);
+				new ValueSuggest(this.app, text.inputEl, authorSuggestions);
 			});
+
+		if (this.config.authorWikilink) {
+			contentEl.createEl('p', {
+				cls: 'setting-item-description',
+				text: 'Authors are saved as wikilinks, such as [[author]].',
+			});
+		}
 
 		new Setting(contentEl)
 			.setName('Subtitle')

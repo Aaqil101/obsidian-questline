@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	BUILTIN_AUTHOR,
 	BUILTIN_GOAL,
 	BUILTIN_PROJECT,
 	STARTER_TEMPLATES,
@@ -166,10 +167,16 @@ describe('composeNote', () => {
 });
 
 describe('starter templates', () => {
-	it('ships one editable goal and one editable project template', () => {
+	it('ships one editable goal, project, and author template', () => {
 		expect(STARTER_TEMPLATES.map((item) => item.fileName)).toEqual([
 			'Goal template',
 			'Project template',
+			'Author template',
+		]);
+		expect(STARTER_TEMPLATES.map((item) => item.setting)).toEqual([
+			'goalTemplate',
+			'projectTemplate',
+			'authorTemplate',
 		]);
 
 		for (const item of STARTER_TEMPLATES) {
@@ -184,6 +191,9 @@ describe('starter templates', () => {
 		);
 		expect(starter('Project template').document.body).toContain(
 			BUILTIN_PROJECT.body.trim(),
+		);
+		expect(starter('Author template').document.body).toContain(
+			BUILTIN_AUTHOR.body.trim(),
 		);
 		expect(starter('Project template').document.body).toContain(
 			'## Project info',

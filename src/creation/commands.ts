@@ -4,7 +4,8 @@ import type QuestlinePlugin from '../main';
 import { readTemplate } from '../templates/notes';
 import { GoalModal } from './goalModal';
 import { confirmCollision } from './confirmModal';
-import { registerEditCommands } from './editCommands';
+import { ensureAuthorNotes } from './authorNotes';
+import { registerEditCommands, rememberProjectAuthors } from './editCommands';
 import { openNote, vaultPathExists, writeCreation } from './notes';
 import {
 	planGoal,
@@ -128,6 +129,10 @@ async function createProject(
 		);
 
 		const file = await writeCreation(app, plan);
+		rememberProjectAuthors(plugin, draft.author);
+		if (config.authorWikilink) {
+			await ensureAuthorNotes(app, config, draft.author, file.path);
+		}
 		new Notice(`Created the project ${file.basename}.`);
 
 		if (config.openAfterCreate) await openNote(app, file);

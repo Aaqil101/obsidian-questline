@@ -27,6 +27,7 @@ import {
 	renderFilename,
 	type TemplateValues,
 } from '../templates/render';
+import { authorField } from './authors';
 
 /** Characters Obsidian or a link cannot carry, plus control characters. */
 const INVALID_NAME = /[\\/:*?"<>|#^[\]]/g;
@@ -389,8 +390,9 @@ export function planProject(
 		status,
 		aliases: [sanitizeName(title) || 'Untitled project'],
 	};
-	if (author) core.author = author;
 	if (subtitle) core.subtitle = subtitle;
+	const authorValue = authorField(draft.author, config.authorWikilink);
+	if (authorValue !== null) core.author = authorValue;
 	if (goalLinks.length === 1) core.goal = goalLinks[0];
 	if (goalLinks.length > 1) core.goal = goalLinks;
 

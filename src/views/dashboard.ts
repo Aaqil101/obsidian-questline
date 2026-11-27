@@ -51,12 +51,12 @@ import {
 	authorOptions,
 	filterGoalProjects,
 	formatTrackedHours,
-	projectAuthor,
 	sortGoalProjects,
 	statusOptions,
 	type ProjectListState,
 } from './projects';
 import { countLabel, renderEmpty, renderProgressRow } from './render';
+import { renderAuthors } from './authors';
 
 export const DASHBOARD_VIEW_TYPE = 'questline-dashboard';
 
@@ -1061,10 +1061,16 @@ export class QuestlineDashboardView extends ItemView {
 				'questline-projects-goal-link',
 			);
 
-			row.createEl('td', {
+			const author = row.createEl('td', {
 				cls: 'questline-projects-author',
-				text: projectAuthor(project),
 			});
+			renderAuthors(
+				author,
+				project.authors,
+				config,
+				this.plugin.app,
+				project.path,
+			);
 			row.createEl('td', {
 				cls: 'questline-projects-status',
 				text: project.status ?? 'No status',
@@ -2295,10 +2301,21 @@ export class QuestlineDashboardView extends ItemView {
 			'list-checks',
 			`${project.counts.completed} / ${project.counts.total} tasks`,
 		);
-		if (project.authors.length > 0) {
-			addMetaItem(meta, 'user', project.authors.join(', '));
-		} else if (fullMeta) {
-			addMetaItem(meta, 'user', 'None');
+		if (project.authors.length > 0 || fullMeta) {
+			const item = meta.createSpan({
+				cls: 'questline-dashboard-meta-item',
+			});
+			const icon = item.createSpan({
+				cls: 'questline-dashboard-meta-icon',
+			});
+			setIcon(icon, 'user');
+			renderAuthors(
+				item,
+				project.authors,
+				config,
+				this.plugin.app,
+				project.path,
+			);
 		}
 		if (project.hours !== null && (project.hours > 0 || fullMeta)) {
 			addMetaItem(

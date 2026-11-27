@@ -51,7 +51,7 @@ export function notesGroup(host: SettingsHost): SettingDefinitionGroup {
 			pageDefinition(
 				host,
 				'Templates',
-				'Global goal and project templates, and the starter templates.',
+				'Global goal, project, and author templates, and the starter templates.',
 				renderTemplatesPage,
 			),
 			pageDefinition(
@@ -99,6 +99,17 @@ function renderFoldersPage(
 		placeholder: 'projects',
 		normalize,
 		commit: (path) => plugin.updateSettings({ projectFolder: path }),
+	});
+
+	const author = new Setting(card)
+		.setName('Author folder')
+		.setDesc('Where missing author notes are created.');
+	folderSetting(author, {
+		app: plugin.app,
+		value: settings.authorFolder,
+		placeholder: 'authors',
+		normalize,
+		commit: (path) => plugin.updateSettings({ authorFolder: path }),
 	});
 }
 
@@ -150,6 +161,17 @@ function renderTemplatesPage(
 		commit: (path) => plugin.updateSettings({ projectTemplate: path }),
 	});
 
+	const author = new Setting(card)
+		.setName('Author template')
+		.setDesc('Used when a linked author note is missing.');
+	noteSetting(author, {
+		app: plugin.app,
+		value: settings.authorTemplate,
+		placeholder: 'Built-in author template',
+		normalize,
+		commit: (path) => plugin.updateSettings({ authorTemplate: path }),
+	});
+
 	const starter = group(containerEl, 'Starter templates');
 	noteParagraph(
 		starter,
@@ -170,7 +192,7 @@ function renderTemplatesPage(
 	const create = new Setting(starter)
 		.setName('Create starter templates')
 		.setDesc(
-			'Write an editable goal template and project template into the folder above.',
+			'Write editable goal, project, and author templates into the folder above.',
 		);
 	create.addButton((button) =>
 		button.setButtonText('Create').onClick(() => {
@@ -240,5 +262,15 @@ function renderFieldsPage(
 		defaults: DEFAULT_PROJECT_STATUSES,
 		placeholder: 'New status',
 		onChange: (values) => plugin.updateSettings({ projectStatuses: values }),
+	});
+
+	renderListEditor({
+		containerEl,
+		name: 'Authors',
+		desc: 'Suggestions for the author picker when creating or editing a project.',
+		values: settings.authors,
+		defaults: [],
+		placeholder: 'New author',
+		onChange: (values) => plugin.updateSettings({ authors: values }),
 	});
 }

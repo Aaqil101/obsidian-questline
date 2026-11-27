@@ -18,6 +18,7 @@ import { isTimekeepInstalled } from '../timekeep/timekeep';
 import { projectGoalLink } from './edit';
 import { GoalPicker } from './goalPicker';
 import type { ProjectDraft } from './plan';
+import { ValueSuggest } from './suggest';
 import {
 	announceMissingTemplate,
 	defaultProjectTemplatePath,
@@ -128,13 +129,29 @@ export class ProjectModal extends Modal {
 				});
 			});
 
+		const authorSuggestions = [
+			...new Set(
+				[...this.config.authors, this.config.defaultAuthor].filter(
+					(name) => name.trim() !== '',
+				),
+			),
+		];
+
 		new Setting(contentEl)
 			.setName('Author')
 			.setDesc('Optional. Defaults to the configured author.')
 			.addText((text) => {
 				inputs.author = text;
 				text.setValue(this.config.defaultAuthor);
+				new ValueSuggest(this.app, text.inputEl, authorSuggestions);
 			});
+
+		if (this.config.authorWikilink) {
+			contentEl.createEl('p', {
+				cls: 'setting-item-description',
+				text: 'Authors are saved as wikilinks, such as [[author]].',
+			});
+		}
 
 		new Setting(contentEl)
 			.setName('Subtitle')

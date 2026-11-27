@@ -3,9 +3,10 @@
  * index refreshes, so a checkbox or frontmatter change repaints in place.
  * The same processors run in Reading view and Live Preview.
  */
-import { MarkdownRenderChild } from 'obsidian';
+import { MarkdownRenderChild, type App } from 'obsidian';
 import type QuestlinePlugin from '../main';
 import type { ProgressBarStyle, QuestlineConfig } from '../settings/types';
+import { renderAuthors } from './authors';
 import {
 	describeDue,
 	formatHours,
@@ -24,7 +25,6 @@ import {
 	dashboardStats,
 	filterGoalProjects,
 	formatTrackedHours,
-	projectAuthor,
 	sortGoalProjects,
 	statusOptions,
 	type ProjectListState,
@@ -366,6 +366,8 @@ function renderProjectDashboard(
 	config: QuestlineConfig,
 	timeFormat: TimeFormat,
 	open: OpenProject,
+	app: App,
+	sourcePath: string,
 ): void {
 	const wrap = containerEl.createDiv({ cls: 'questline-project-table-wrap' });
 	const table = wrap.createEl('table', {
@@ -383,10 +385,16 @@ function renderProjectDashboard(
 		const row = body.createEl('tr');
 		const name = row.createEl('td');
 		addProjectLink(name, project, open);
-		row.createEl('td', {
+		const author = row.createEl('td', {
 			cls: 'questline-project-author',
-			text: projectAuthor(project),
 		});
+		renderAuthors(
+			author,
+			project.authors,
+			config,
+			app,
+			sourcePath,
+		);
 		row.createEl('td', {
 			text: `${statusEmoji(project.status)} ${statusLabel(project.status)}`,
 		});
@@ -624,6 +632,8 @@ class GoalProjectsBlock extends QuestlineBlock {
 				config,
 				config.trackedTimeFormat,
 				open,
+				this.plugin.app,
+				this.sourcePath,
 			);
 
 			return;
