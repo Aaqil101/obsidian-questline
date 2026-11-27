@@ -113,8 +113,8 @@ export const DEFAULT_SETTINGS: QuestlineSettings = {
 	goalProjectsStyle: 'minimal',
 	trackedTimeFormat: 'decimal',
 	dashboardStyle: 'minimal',
-	goalsStyle: 'list',
-	projectsStyle: 'table',
+	goalsStyle: 'board',
+	projectsStyle: 'board',
 	skipControlsToBoard: false,
 };
 

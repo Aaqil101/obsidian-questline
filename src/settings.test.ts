@@ -51,8 +51,8 @@ describe('resolveConfig', () => {
 		expect(config.goalProjectsStyle).toBe('minimal');
 		expect(config.trackedTimeFormat).toBe('decimal');
 		expect(config.dashboardStyle).toBe('minimal');
-		expect(config.goalsStyle).toBe('list');
-		expect(config.projectsStyle).toBe('table');
+		expect(config.goalsStyle).toBe('board');
+		expect(config.projectsStyle).toBe('board');
 		expect(config.skipControlsToBoard).toBe(false);
 	});
 
@@ -264,7 +264,7 @@ describe('resolveConfig', () => {
 			goalsStyle: 'fancy' as typeof DEFAULT_SETTINGS.goalsStyle,
 		});
 
-		expect(invalid.goalsStyle).toBe('list');
+		expect(invalid.goalsStyle).toBe('board');
 	});
 
 	it('accepts the projects styles and falls back otherwise', () => {
@@ -282,7 +282,7 @@ describe('resolveConfig', () => {
 			projectsStyle: 'fancy' as typeof DEFAULT_SETTINGS.projectsStyle,
 		});
 
-		expect(invalid.projectsStyle).toBe('table');
+		expect(invalid.projectsStyle).toBe('board');
 	});
 
 	it('detects every repaint-only appearance change', () => {
@@ -293,10 +293,10 @@ describe('resolveConfig', () => {
 			resolveConfig({ trackedTimeFormat: 'readable' }),
 			resolveConfig({ useTimekeep: false }),
 			resolveConfig({ dashboardStyle: 'cards' }),
+			resolveConfig({ goalsStyle: 'list' }),
 			resolveConfig({ goalsStyle: 'cards' }),
-			resolveConfig({ goalsStyle: 'board' }),
+			resolveConfig({ projectsStyle: 'table' }),
 			resolveConfig({ projectsStyle: 'cards' }),
-			resolveConfig({ projectsStyle: 'board' }),
 			resolveConfig({ skipControlsToBoard: true }),
 			resolveConfig({ goalCategories: ['Health'] }),
 		];
