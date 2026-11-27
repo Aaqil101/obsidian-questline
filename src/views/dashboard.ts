@@ -9,6 +9,8 @@ import {
 } from 'obsidian';
 import { openGoalModal, openProjectModal } from '../creation/commands';
 import { openGoalEditor, openProjectEditor } from '../creation/editCommands';
+import { collectJournalDates } from '../journal/collect';
+import { journalDate, type JournalDates } from '../journal/dates';
 import type QuestlinePlugin from '../main';
 import {
 	DEFAULT_DASHBOARD_STATUSES,
@@ -263,6 +265,7 @@ function renderStatCards(
 export class QuestlineDashboardView extends ItemView {
 	private unsubscribe: (() => void) | null = null;
 	private activeTab: 'dashboard' | 'goals' | 'projects' = 'dashboard';
+	private journal: JournalDates | undefined;
 	private goalList: GoalListState = {
 		search: '',
 		category: '',
@@ -343,6 +346,7 @@ export class QuestlineDashboardView extends ItemView {
 		this.boardDrag = null;
 
 		const config = this.plugin.getConfig();
+		this.journal = collectJournalDates(this.plugin.app.vault, config);
 		if (this.hasBoard() && config.skipControlsToBoard) {
 			this.renderBoardFocusTarget(contentEl);
 		}
@@ -758,7 +762,7 @@ export class QuestlineDashboardView extends ItemView {
 					(goal.due?.overdue ? ' is-overdue' : ''),
 				attr: { 'data-label': 'Due' },
 			});
-			due.createSpan({ text: describeDue(goal.due) });
+			this.renderDueText(due, goal);
 		}
 	}
 
@@ -1249,7 +1253,14 @@ export class QuestlineDashboardView extends ItemView {
 			'folder',
 			countLabel(goal.projectCount, 'project', 'projects'),
 		);
-		addMetaItem(meta, 'calendar', describeDue(goal.due));
+		const dueItem = meta.createSpan({
+			cls: 'questline-dashboard-meta-item',
+		});
+		const dueIcon = dueItem.createSpan({
+			cls: 'questline-dashboard-meta-icon',
+		});
+		setIcon(dueIcon, 'calendar');
+		this.renderDueText(dueItem, goal);
 
 		const details: string[] = [];
 		if (goal.target !== null) {
@@ -1302,6 +1313,68 @@ export class QuestlineDashboardView extends ItemView {
 				this.editGoalAt(path);
 			},
 		};
+	}
+
+	private journalHref(goal: GoalOverviewItem): string | null {
+		const date = goal.due?.dueDate;
+		if (!date || !this.journal) return null;
+
+		const value = journalDate(date, this.journal);
+
+		return value.startsWith('[[') ? date : null;
+	}
+
+	private openJournalDate(date: string, event: Event): void {
+		event.preventDefault();
+		event.stopPropagation();
+		void this.plugin.app.workspace.openLinkText(
+			date,
+			'',
+			event instanceof MouseEvent &&
+				(event.ctrlKey || event.metaKey),
+		);
+	}
+
+	private renderDueText(
+		containerEl: HTMLElement,
+		goal: GoalOverviewItem,
+	): void {
+		const href = this.journalHref(goal);
+		if (!href) {
+			containerEl.createSpan({ text: describeDue(goal.due) });
+
+			return;
+		}
+
+		const link = containerEl.createEl('a', {
+			cls: 'internal-link questline-journal-date',
+			text: describeDue(goal.due),
+			attr: { href },
+		});
+		link.addEventListener('click', (event) => {
+			this.openJournalDate(href, event);
+		});
+	}
+
+	private linkDueElement(
+		element: HTMLElement,
+		goal: GoalOverviewItem,
+	): void {
+		const href = this.journalHref(goal);
+		if (!href) return;
+
+		element.addClass('is-journal-link');
+		element.setAttr('role', 'link');
+		element.setAttr('tabindex', '0');
+		element.setAttr('aria-label', `Open journal note ${href}`);
+		element.addEventListener('click', (event) => {
+			this.openJournalDate(href, event);
+		});
+		element.addEventListener('keydown', (event) => {
+			if (event.key === 'Enter' || event.key === ' ') {
+				this.openJournalDate(href, event);
+			}
+		});
 	}
 
 	private renderDashboardControls(
@@ -1673,6 +1746,7 @@ export class QuestlineDashboardView extends ItemView {
 			cls: 'questline-dashboard-timeline-date-relative',
 			text: date.relative,
 		});
+		this.linkDueElement(dateBox, goal);
 
 		const body = card.createDiv({
 			cls: 'questline-dashboard-timeline-card-body',
@@ -2014,12 +2088,13 @@ export class QuestlineDashboardView extends ItemView {
 			const due = row.createEl('td');
 			const badge = dueBadge(goal);
 			if (badge) {
-				due.createSpan({
+				const dueBadgeEl = due.createSpan({
 					cls:
 						'questline-dashboard-due ' +
 						`questline-dashboard-due--${badge.urgency}`,
 					text: badge.text,
 				});
+				this.linkDueElement(dueBadgeEl, goal);
 			} else {
 				due.createSpan({
 					cls: 'questline-dashboard-table-number',
@@ -2279,12 +2354,13 @@ export class QuestlineDashboardView extends ItemView {
 		});
 		const badge = dueBadge(goal);
 		if (badge) {
-			actions.createSpan({
+			const due = actions.createSpan({
 				cls:
 					'questline-dashboard-due ' +
 					`questline-dashboard-due--${badge.urgency}`,
 				text: badge.text,
 			});
+			this.linkDueElement(due, goal);
 		}
 		renderGoalActions(actions, goal, this.goalActionContext(config));
 

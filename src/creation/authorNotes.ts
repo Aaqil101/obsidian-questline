@@ -3,6 +3,8 @@
  * so a linked author is always openable from a project.
  */
 import { Notice, TFile, type App } from 'obsidian';
+import { collectJournalDates } from '../journal/collect';
+import { journalDate } from '../journal/dates';
 import type { QuestlineConfig } from '../settings/types';
 import { BUILTIN_AUTHOR } from '../templates/builtin';
 import { composeNote } from '../templates/document';
@@ -48,6 +50,8 @@ export async function ensureAuthorNote(
 	const template = config.authorTemplate
 		? await readTemplate(app, config.authorTemplate)
 		: null;
+	const now = new Date();
+	const journal = collectJournalDates(app.vault, config, now);
 	const folder = config.authorFolder;
 	const path = allocatePath(folder, author, (candidate) =>
 		vaultPathExists(app, candidate),
@@ -59,8 +63,11 @@ export async function ensureAuthorNote(
 		const parts = composeNote({
 			template,
 			fallback: BUILTIN_AUTHOR,
-			core: { created: formatDate(new Date(), 'YYYY-MM-DD') },
+			core: {
+				created: journalDate(formatDate(now, 'YYYY-MM-DD'), journal),
+			},
 			values: { title: author },
+			now,
 		});
 
 		return await app.vault.create(path, noteText(parts));

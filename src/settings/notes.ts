@@ -111,6 +111,19 @@ function renderFoldersPage(
 		normalize,
 		commit: (path) => plugin.updateSettings({ authorFolder: path }),
 	});
+
+	const journal = new Setting(card)
+		.setName('Journal folder')
+		.setDesc(
+			'Daily notes that dates link into. A date links only when its note exists here, or when it is today or later. Leave blank to keep dates plain.',
+		);
+	folderSetting(journal, {
+		app: plugin.app,
+		value: settings.journalFolder,
+		placeholder: 'Choose a folder',
+		normalize,
+		commit: (path) => plugin.updateSettings({ journalFolder: path }),
+	});
 }
 
 /**

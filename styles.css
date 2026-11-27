@@ -907,6 +907,19 @@
 	white-space: nowrap;
 }
 
+.questline-journal-date.internal-link,
+.is-journal-link {
+	cursor: pointer;
+	text-decoration: underline;
+	text-decoration-style: dotted;
+	text-underline-offset: 2px;
+}
+
+.is-journal-link:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 2px;
+}
+
 .questline-dashboard-due--soon,
 .questline-dashboard-due--today {
 	background-color: var(--background-modifier-hover);

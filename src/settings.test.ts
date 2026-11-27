@@ -38,6 +38,7 @@ describe('resolveConfig', () => {
 		expect(config.goalFolder).toBe('goals');
 		expect(config.projectFolder).toBe('projects');
 		expect(config.authorFolder).toBe('authors');
+		expect(config.journalFolder).toBe('');
 		expect(config.templateFolder).toBe('templates');
 		expect(config.goalTemplate).toBe('');
 		expect(config.projectTemplate).toBe('');

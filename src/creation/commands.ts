@@ -1,6 +1,7 @@
 /** Commands that create goals and projects from the current settings. */
 import { Notice } from 'obsidian';
 import type QuestlinePlugin from '../main';
+import { collectJournalDates } from '../journal/collect';
 import { readTemplate } from '../templates/notes';
 import { GoalModal } from './goalModal';
 import { confirmCollision } from './confirmModal';
@@ -58,6 +59,8 @@ async function createGoal(
 ): Promise<void> {
 	const { app } = plugin;
 	const config = plugin.getConfig();
+	const now = new Date();
+	const journal = collectJournalDates(app.vault, config, now);
 
 	try {
 		const [goalTemplate, projectTemplate] = await Promise.all([
@@ -73,8 +76,9 @@ async function createGoal(
 			draft,
 			{
 				config,
-				now: new Date(),
+				now,
 				exists: (path) => vaultPathExists(app, path),
+				journal,
 			},
 			{ goal: goalTemplate, project: projectTemplate },
 		);
@@ -107,6 +111,8 @@ async function createProject(
 ): Promise<void> {
 	const { app } = plugin;
 	const config = plugin.getConfig();
+	const now = new Date();
+	const journal = collectJournalDates(app.vault, config, now);
 
 	try {
 		const resolved = await readChosenProjectTemplate(
@@ -122,8 +128,9 @@ async function createProject(
 			draft,
 			{
 				config,
-				now: new Date(),
+				now,
 				exists: (path) => vaultPathExists(app, path),
+				journal,
 			},
 			{ template: resolved.document },
 		);

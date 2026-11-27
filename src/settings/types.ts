@@ -42,6 +42,7 @@ export interface QuestlineSettings {
 	goalFolder: string;
 	projectFolder: string;
 	authorFolder: string;
+	journalFolder: string;
 	templateFolder: string;
 	/** Vault path of the global goal template, or blank for the built-in one. */
 	goalTemplate: string;
@@ -118,6 +119,7 @@ export const DEFAULT_SETTINGS: QuestlineSettings = {
 	goalFolder: DEFAULT_GOAL_FOLDER,
 	projectFolder: DEFAULT_PROJECT_FOLDER,
 	authorFolder: DEFAULT_AUTHOR_FOLDER,
+	journalFolder: '',
 	templateFolder: DEFAULT_TEMPLATE_FOLDER,
 	goalTemplate: '',
 	projectTemplate: '',
@@ -155,6 +157,7 @@ export interface QuestlineConfig {
 	goalFolder: string;
 	projectFolder: string;
 	authorFolder: string;
+	journalFolder: string;
 	templateFolder: string;
 	goalTemplate: string;
 	projectTemplate: string;
@@ -325,6 +328,19 @@ function cleanTaskScope(mode: unknown, heading: unknown): TaskScope {
  * writing somewhere unexpected. A folder that does not exist yet is kept,
  * because creation makes it on first use.
  */
+/** A configured journal folder; blank means dates stay plain. */
+function cleanJournalFolder(
+	value: unknown,
+	checkFolder: FolderCheck,
+): string {
+	if (typeof value !== 'string') return '';
+
+	const path = normalizeFolder(value);
+	if (!path) return '';
+
+	return checkFolder(path) === 'file' ? '' : path;
+}
+
 function safeFolder(
 	value: unknown,
 	fallback: string,
@@ -361,6 +377,10 @@ export function resolveConfig(
 		authorFolder: safeFolder(
 			stored.authorFolder,
 			DEFAULT_AUTHOR_FOLDER,
+			checkFolder,
+		),
+		journalFolder: cleanJournalFolder(
+			stored.journalFolder,
 			checkFolder,
 		),
 		templateFolder: safeFolder(

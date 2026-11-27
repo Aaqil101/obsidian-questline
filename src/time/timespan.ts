@@ -132,14 +132,20 @@ export function parseDate(value: string | Date | null | undefined): Date | null 
 	const text = value.trim();
 	if (!text) return null;
 
-	if (/T.*(?:Z|[+-]\d{2}:?\d{2})$/.test(text)) {
-		const parsed = new Date(text);
+	// Journal-linked dates arrive as `[[YYYY-MM-DD]]`.
+	const link = /^\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]$/.exec(
+		text,
+	);
+	const plain = link?.[1]?.trim() ?? text;
+
+	if (/T.*(?:Z|[+-]\d{2}:?\d{2})$/.test(plain)) {
+		const parsed = new Date(plain);
 		return Number.isNaN(parsed.getTime()) ? null : parsed;
 	}
 
 	const match =
 		/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?/.exec(
-			text,
+			plain,
 		);
 	if (!match) return null;
 

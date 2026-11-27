@@ -383,6 +383,22 @@ describe('planProject', () => {
 		]);
 	});
 
+	it('links the created date when the journal has that day', () => {
+		const plan = planProject(
+			projectDraft(),
+			{
+				...context(),
+				journal: {
+					names: new Set(['2026-11-22']),
+					today: '2026-11-22',
+				},
+			},
+			{ template: null },
+		);
+
+		expect(plan.note.frontmatter.created).toBe('[[2026-11-22]]');
+	});
+
 	it('writes multiple goal links and joins template tokens', () => {
 		const plan = planProject(
 			projectDraft({

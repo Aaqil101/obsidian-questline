@@ -5,6 +5,7 @@
  */
 import { TEMPLATE_TYPE } from '../constants';
 import { withoutDate } from '../index/names';
+import { journalDate, type JournalDates } from '../journal/dates';
 import type { QuestlineConfig } from '../settings/types';
 import { normalizeFolder } from '../settings/types';
 import {
@@ -102,6 +103,8 @@ export interface PlanContext {
 	now: Date;
 	/** True when the path is already used, ignoring case. */
 	exists: (path: string) => boolean;
+	/** Daily-note names, when a journal folder is configured. */
+	journal?: JournalDates;
 }
 
 export interface GoalPlanTemplates {
@@ -325,7 +328,7 @@ export function planGoal(
 
 	const core: Record<string, unknown> = {
 		tags: [config.goalTag],
-		created: formatDate(now, 'YYYY-MM-DD'),
+		created: journalDate(formatDate(now, 'YYYY-MM-DD'), context.journal),
 		aliases: [sanitizeName(title) || 'Untitled goal'],
 	};
 	if (category) core.category = category;
@@ -386,7 +389,7 @@ export function planProject(
 
 	const core: Record<string, unknown> = {
 		tags: [config.projectTag],
-		created: formatDate(now, 'YYYY-MM-DD'),
+		created: journalDate(formatDate(now, 'YYYY-MM-DD'), context.journal),
 		status,
 		aliases: [sanitizeName(title) || 'Untitled project'],
 	};

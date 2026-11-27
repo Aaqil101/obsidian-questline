@@ -8,8 +8,18 @@ function due(raw: string, start = created): string | null {
 	return parseTimespan(raw, { created: start, now }).dueDate;
 }
 
-describe('parseTimespan', () => {
-	it('parses every legacy emoji value', () => {
+describe('parseDate', () => {
+	it('unwraps a journal wikilink', () => {
+		const plain = parseDate('2025-01-29');
+		const linked = parseDate('[[2025-01-29]]');
+		const aliased = parseDate('[[2025-01-29|Jan 29]]');
+
+		expect(linked?.getTime()).toBe(plain?.getTime());
+		expect(aliased?.getTime()).toBe(plain?.getTime());
+	});
+});
+
+describe('parseTimespan', () => {	it('parses every legacy emoji value', () => {
 		expect(due('📅🔟 Years')).toBe('2035-01-29');
 		expect(due('📅5️⃣ Years')).toBe('2030-01-29');
 		expect(due('📅3️⃣ Years')).toBe('2028-01-29');
